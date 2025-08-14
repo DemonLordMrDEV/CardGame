@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Trick-Taking — You vs 3 Bots (All-JS)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+:root{
+  --bg:#0e1113; --panel:#12161a; --muted:#9fb3ad; --ink:#e7f2ef;
+  --table-grad1:#1d6a35; --table-grad2:#0f3d20; --accent:#48e291; --accentText:#052815;
+  --line:#263342; --disabled:#3a4652; --gold:#f5d167; --warn:#ffb86b;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+header{padding:16px 18px;text-align:center;font-size:26px;font-weight:800}
+.layout{display:grid;grid-template-columns:300px 1fr 360px;gap:14px;max-width:1400px;margin:0 auto;padding:10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.panel h3{margin:0 0 8px 0;font-size:13px;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
+#left{display:flex;flex-direction:column;gap:10px}
+#chooser{display:none;gap:8px;flex-wrap:wrap}
+.suits{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.btn{appearance:none;border:0;border-radius:10px;padding:10px 12px;font-weight:800;background:var(--accent);color:var(--accentText);cursor:pointer}
+.btn.secondary{background:#24313e;color:#d7ece5;border:1px solid var(--line)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+#you-hand{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:6px}
+.group{display:flex;flex-direction:column;align-items:center}
+.group .title{font-size:12px;color:var(--muted);margin-bottom:6px}
+.card{display:inline-flex;align-items:center;justify-content:center;min-width:56px;height:72px;border-radius:10px;border:1px solid #2a3643;background:#212b35;color:#fff;margin:4px;padding:6px 10px;font-weight:800;font-size:18px;cursor:pointer;user-select:none;transition:transform .08s,opacity .12s,box-shadow .12s}
+.card.heart,.card.diamond{color:#ffb7b7}
+.card[aria-disabled="true"]{cursor:not-allowed;opacity:.3;filter:grayscale(.35)}
+.card.glow{box-shadow:0 0 0 4px rgba(72,226,145,.12),0 6px 18px rgba(0,0,0,.4)}
+#table{padding:10px;border-radius:12px;background:linear-gradient(180deg,var(--table-grad1),var(--table-grad2));display:grid;grid-template-rows:72px 1fr 140px;gap:10px}
+.row{display:flex;align-items:center;justify-content:center;gap:12px}
+.slot{width:170px;height:72px;border-radius:10px;border:2px dashed rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;position:relative}
+.slot .who{position:absolute;top:-18px;font-size:11px;color:#d9f0e6;opacity:.9}
+#center-note{color:#cfe8df;text-align:center;margin-top:6px;font-size:13px}
+#right{display:flex;flex-direction:column;gap:12px}
+.kv{display:flex;gap:10px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:8px;background:#0f1519;border:1px solid var(--line);padding:8px 12px;border-radius:999px;font-weight:800}
+.stat{display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
+.sep{height:1px;background:var(--line);margin:8px 0}
+#log{height:260px;overflow:auto;background:#050708;border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre-line}
+.small{font-size:13px;color:var(--muted)}
+.center{display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<header>Trick-Taking — Play: You vs 3 Bots</header>
+
+<div class="layout">
+  <!-- Left: Hand + chooser + controls -->
+  <div id="left" class="panel">
+    <h3>Your Hand</h3>
+    <div id="you-hand"></div>
+
+    <div id="chooser" class="panel" style="padding:10px">
+      <div class="small center">You are the chooser. Pick a trump or choose Random (13th card decides)</div>
+      <div class="suits" style="margin-top:10px">
+        <button class="btn secondary suit-btn" data-suit="Spades">Spades ♠</button>
+        <button class="btn secondary suit-btn" data-suit="Hearts">Hearts ♥</button>
+        <button class="btn secondary suit-btn" data-suit="Diamonds">Diamonds ♦</button>
+        <button class="btn secondary suit-btn" data-suit="Clubs">Clubs ♣</button>
+        <button class="btn" id="btn-random">Random</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+      <button id="btn-start" class="btn">Start Match</button>
+      <button id="btn-new" class="btn secondary" disabled>New Match</button>
+    </div>
+
+    <div style="margin-top:8px" class="small">Tips: valid cards glow; invalid are visible but disabled. Bots have thinking delays for realism.</div>
+  </div>
+
+  <!-- Center: Table -->
+  <div id="table" class="panel">
+    <div class="row">
+      <div class="slot" id="slot-P2"><div class="who">P2</div></div>
+    </div>
+    <div class="row">
+      <div class="slot" id="slot-P3"><div class="who">P3</div></div>
+      <div class="slot" id="slot-P4"><div class="who">P4</div></div>
+    </div>
+    <div class="row" style="flex-direction:column">
+      <div class="slot" id="slot-P1"><div class="who">You (P1)</div></div>
+      <div id="center-note" class="small">Click "Start Match" to begin (deals 5 to everyone)</div>
+    </div>
+  </div>
+
+  <!-- Right: Info + log -->
+  <div id="right">
+    <div class="panel">
+      <h3>Match Info</h3>
+      <div class="kv">
+        <div class="badge">Trump: <strong id="ui-trump" style="margin-left:6px">—</strong></div>
+        <div class="badge">Pool: <strong id="ui-pool" style="margin-left:6px">0</strong></div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat"><div class="badge">Team 1 (P1 + P3)</div><strong id="ui-t1">0</strong></div>
+      <div class="stat"><div class="badge">Team 2 (P2 + P4)</div><strong id="ui-t2">0</strong></div>
+      <div class="sep"></div>
+      <div class="stat"><span>Last Trick Winner</span><strong id="ui-last">—</strong></div>
+      <div class="stat"><span>Starter</span><strong id="ui-starter">—</strong></div>
+      <div class="stat"><span>Trick #</span><strong id="ui-trick">0</strong></div>
+    </div>
+
+    <div class="panel">
+      <h3>Log</h3>
+      <div id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   Game Engine (JS port + upgrade)
+   ========================= */
+const SUITS = ["Spades","Hearts","Diamonds","Clubs"];
+const SUIT_SYMBOL = {Spades:"♠",Hearts:"♥",Diamonds:"♦",Clubs:"♣"};
+const RANKS = [2,3,4,5,6,7,8,9,10,11,12,13,14]; // 11=J,12=Q,13=K,14=A
+const RANK_LABEL = {11:"J",12:"Q",13:"K",14:"A"};
+const PLAYERS = ["P1","P2","P3","P4"];
+const TEAM_OF = {P1:1,P3:1,P2:2,P4:2};
+const BOT_DELAY = 520; // ms - think delay
+
+function rankLabel(r){ return RANK_LABEL[r] || String(r); }
+function cardStr(c){ return `${rankLabel(c.r)}${SUIT_SYMBOL[c.s]}`; }
+function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+function createDeck(){
+  const d=[];
+  for(const s of SUITS) for(const r of RANKS) d.push({r,s});
+  return d;
+}
+function shuffle(arr, rng=Math){ // Fisher-Yates
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor((rng.random?rng.random():Math.random())*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+// strength comparator -> returns array for lex compare
+function strength(card, leadSuit, trump){
+  return [(trump && card.s===trump)?1:0, (leadSuit && card.s===leadSuit)?1:0, card.r];
+}
+function compareStrength(a,b){
+  for(let i=0;i<3;i++){ if(a[i]>b[i]) return 1; if(a[i]<b[i]) return -1; } return 0;
+}
+function currentWinner(played, trump){
+  if(!played.length) return null;
+  const lead = played[0].card.s;
+  let best = played[0]; let bestScore = strength(best.card, lead, trump);
+  for(const p of played.slice(1)){
+    const sc = strength(p.card, lead, trump);
+    if(compareStrength(sc,bestScore) > 0){ best = p; bestScore = sc; }
+  }
+  return best; // {idx, pid, card}
+}
+
+/* ===== GameCore class ===== */
+class GameCore {
+  constructor(seed=null, playersMode=null){
+    // playersMode e.g. {P1:'human',P2:'bot',...}
+    this.rng = seed ? this._seededRandom(seed) : Math;
+    this.playersMode = {P1:'human',P2:'bot',P3:'bot',P4:'bot'};
+    if(playersMode) Object.assign(this.playersMode, playersMode);
+    this.reset();
+  }
+
+  _seededRandom(seed){
+    // simple mulberry32
+    let t = seed >>> 0;
+    return {
+      random(){
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ t >>> 15, 1 | t);
+        r ^= r + Math.imul(r ^ r >>> 7, 61 | r);
+        return ((r ^ r >>> 14) >>> 0) / 4294967296;
+      }
+    };
+  }
+
+  reset(){
+    this.matchPoints = {1:0,2:0};
+    this.resetForNewSeries();
+  }
+
+  resetForNewSeries(){
+    this.chooserIndex = 0; // who chooses trump (0..3) -> P1 initially
+    this.startNewMatch();
+  }
+
+  startNewMatch(){
+    this.deck = createDeck();
+    shuffle(this.deck, this.rng);
+    this.hands = {P1:[],P2:[],P3:[],P4:[]};
+    for(let i=0;i<5;i++) for(const p of PLAYERS) this.hands[p].push(this.deck.pop());
+    for(const p of PLAYERS) this.hands[p] = this._sortHand(this.hands[p]);
+    this.trump = null;
+    this.chosenRandom = false;
+    this.unclaimedPool = 0;
+    this.teamTricks = {1:0,2:0};
+    this.playerTricks = {P1:0,P2:0,P3:0,P4:0};
+    this.matchLog = [];
+    this.lastTrickWinner = null;
+    this.consecutiveCount = 0;
+    this.trickNumber = 0;
+    this.currentTrick = []; // [{idx,pid,card}]
+    this.starterIndex = this.chooserIndex;
+    this.lastCompletedTrick = [];
+    this.seenCards = []; // cards that have been played (for AI knowledge)
+    this.pendingResolve = false;
+  }
+
+  _sortHand(hand){
+    const order = {Spades:0,Hearts:1,Diamonds:2,Clubs:3};
+    return hand.slice().sort((a,b)=> order[a.s]-order[b.s] || b.r - a.r);
+  }
+
+  chooserIsHuman(){ return this.chooserIndex === 0; }
+  chooserFirstFive(){ return clone(this.hands[PLAYERS[this.chooserIndex]].slice(0,5)); }
+
+  chooseTrumpManual(suit){
+    if(!SUITS.includes(suit)) throw new Error("Invalid suit");
+    this.trump = suit; this.chosenRandom=false;
+    this._finishDeal();
+    return this.getStateView();
+  }
+
+  chooseTrumpRandom(){
+    this.chosenRandom = true;
+    const chooser = PLAYERS[this.chooserIndex];
+    while(Object.values(this.hands).some(h=>h.length < 13)){
+      for(const p of PLAYERS){
+        if(this.hands[p].length < 13){
+          const c = this.deck.pop();
+          this.hands[p].push(c);
+          if(p === chooser && this.hands[p].length === 13){
+            this.trump = c.s;
+          }
+        }
+      }
+    }
+    for(const p of PLAYERS) this.hands[p] = this._sortHand(this.hands[p]);
+    this.starterIndex = this.chooserIndex;
+    return this.getStateView();
+  }
+
+  _finishDeal(){
+    for(const p of PLAYERS) while(this.hands[p].length < 13) this.hands[p].push(this.deck.pop());
+    for(const p of PLAYERS) this.hands[p] = this._sortHand(this.hands[p]);
+    this.starterIndex = this.chooserIndex;
+  }
+
+  getStateView(forPlayer=null){
+    const handsView = {};
+    for(const p of PLAYERS){
+      if(forPlayer==null || forPlayer===p) handsView[p] = clone(this.hands[p]);
+      else handsView[p] = {count: this.hands[p].length};
+    }
+    return {
+      playersMode: clone(this.playersMode),
+      trump: this.trump,
+      chooser: PLAYERS[this.chooserIndex],
+      starter: PLAYERS[this.starterIndex],
+      trickNumber: this.trickNumber+1,
+      unclaimedPool: this.unclaimedPool,
+      teamTricks: clone(this.teamTricks),
+      playerTricks: clone(this.playerTricks),
+      currentTrick: this.currentTrick.map(x=>({player: x.pid, card: clone(x.card)})),
+      lastCompletedTrick: this.lastCompletedTrick.map(x=>({player:x[0], card: clone(x[1])})),
+      lastTrickWinner: this.lastTrickWinner,
+      hands: handsView,
+      isOver: this.isMatchOver(),
+      tricksRemaining: this.tricksRemaining()
+    };
+  }
+
+  isMatchOver(){ return PLAYERS.every(p=>this.hands[p].length === 0); }
+  tricksRemaining(){ return 13 - this.trickNumber; }
+
+  // VALID/INVALID move check for UI
+  getValidInvalid(playerId){
+    if(!PLAYERS.includes(playerId)) throw new Error("Bad playerId");
+    // Determine whose turn
+    if(this._whoseTurn() !== playerId) {
+      // still return lists but note player can't play now
+    }
+    const hand = this.hands[playerId];
+    if(this.currentTrick.length === 0) return {valid: this._sortHand(hand), invalid: []};
+    const lead = this.currentTrick[0].card.s;
+    const follow = hand.filter(c=> c.s === lead);
+    const valid = follow.length ? this._sortHand(follow) : this._sortHand(hand.slice());
+    const invalid = hand.filter(c=> !valid.some(v=>v.r===c.r && v.s===c.s));
+    return {valid: clone(valid), invalid: clone(this._sortHand(invalid))};
+  }
+
+  // whose turn next
+  _whoseTurn(){
+    const starter = this.starterIndex;
+    const offset = this.currentTrick.length % 4;
+    return PLAYERS[(starter + offset) % 4];
+  }
+
+  // play a card by playerId and card object (validated before)
+  playCard(playerId, card){
+    // validate turn
+    if(this._whoseTurn() !== playerId) throw new Error("Not player's turn");
+    // find card
+    const idx = this.hands[playerId].findIndex(c=> c.r===card.r && c.s===card.s);
+    if(idx === -1) throw new Error("Card not in hand");
+    // follow suit check
+    if(this.currentTrick.length){
+      const lead = this.currentTrick[0].card.s;
+      if(this.hands[playerId].some(c=>c.s===lead) && card.s !== lead) throw new Error("Must follow suit");
+    }
+    // commit
+    this.hands[playerId].splice(idx,1);
+    this.currentTrick.push({idx: PLAYERS.indexOf(playerId), pid: playerId, card: card});
+    this.seenCards.push(card);
+    // resolve if 4 cards on table
+    const events = [{type:'play', player:playerId, card: clone(card)}];
+    if(this.currentTrick.length === 4){
+      const p = this._resolveTrick();
+      events.push(...p);
+    }
+    return {events, state: this.getStateView()};
+  }
+
+  _resolveTrick(){
+    const winnerObj = currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
+    // winnerObj is one of the array elements; if we used map, we get object with idx/pid/card
+    const winnerIdx = winnerObj.idx;
+    const winnerName = PLAYERS[winnerIdx];
+    const winningCard = winnerObj.card;
+    this.lastCompletedTrick = this.currentTrick.map(x=> [x.pid, clone(x.card)]);
+    this.currentTrick = [];
+    const prevWinner = this.lastTrickWinner;
+    this.lastTrickWinner = winnerName;
+    this.starterIndex = winnerIdx;
+    this.trickNumber += 1;
+
+    this.unclaimedPool += 1;
+    if(prevWinner === winnerName) this.consecutiveCount += 1; else this.consecutiveCount = 1;
+
+    const events = [];
+    if(this.consecutiveCount >= 2){
+      const team = TEAM_OF[winnerName];
+      const captured = this.unclaimedPool;
+      this.teamTricks[team] += captured;
+      this.playerTricks[winnerName] += captured;
+      this.unclaimedPool = 0;
+      this.consecutiveCount = 0;
+      events.push({type:'pool_captured', by_player: winnerName, team, amount: captured});
+    }
+
+    events.push({type:'trick_complete', trick_number:this.trickNumber, winner:winnerName, winning_card: clone(winningCard)});
+    if(this.isMatchOver()){
+      const res = this.finalizeMatch();
+      events.push({type:'match_end', result: res});
+    }
+    // store readable log
+    const readable = this.lastCompletedTrick.map(x=>[x[0], cardStr(x[1])]);
+    this.matchLog.push({trick:this.trickNumber, played:readable, winner:winnerName});
+    return events;
+  }
+
+  finalizeMatch(){
+    if(this.unclaimedPool > 0 && this.lastTrickWinner){
+      const t = TEAM_OF[this.lastTrickWinner];
+      this.teamTricks[t] += this.unclaimedPool;
+      this.playerTricks[this.lastTrickWinner] += this.unclaimedPool;
+      this.unclaimedPool = 0;
+    }
+    return {team_tricks: clone(this.teamTricks), player_tricks: clone(this.playerTricks), trump:this.trump, last_trick_winner:this.lastTrickWinner};
+  }
+
+  // auto-play bots until a human turn or match end
+  autoPlayUntilHuman(onMove=null){
+    const moves = [], events = [];
+    // if trump not set -> waiting for chooser
+    if(this.trump === null) return {moves, events, state: this.getStateView()};
+    while(true){
+      if(this.isMatchOver()){
+        const res=this.finalizeMatch();
+        events.push({type:'match_end', result:res});
+        break;
+      }
+      const cur = this._whoseTurn();
+      if(this.playersMode[cur] !== 'bot') break;
+      const ct = this._botChooseCard(cur);
+      const ev = this._applyPlay(cur, ct);
+      moves.push({player: cur, card: clone(ct)});
+      events.push(...ev);
+      if(onMove) onMove({player:cur, card:clone(ct), events:clone(ev)});
+      // continue loop until human's turn or match ends
+    }
+    return {moves, events, state: this.getStateView()};
+  }
+
+  _applyPlay(playerId, ct){
+    // same as playCard but without revalidation
+    const idx = this.hands[playerId].findIndex(c=>c.r===ct.r && c.s===ct.s);
+    if(idx === -1) throw new Error("card missing in _applyPlay");
+    this.hands[playerId].splice(idx,1);
+    this.currentTrick.push({idx:PLAYERS.indexOf(playerId), pid:playerId, card:ct});
+    this.seenCards.push(ct);
+    const events = [{type:'play', player:playerId, card: clone(ct)}];
+    if(this.currentTrick.length === 4){
+      events.push(...this._resolveTrick());
+    }
+    return events;
+  }
+
+  // ========== Bot AI (advanced) ==========
+  _botChooseCard(playerId){
+    // Knowledge: this.hands[playerId], this.currentTrick, this.unclaimedPool, this.trump, this.seenCards, this.trickNumber
+    const hand = this.hands[playerId].slice();
+    const valid = this._validFor(playerId);
+    const lead = this.currentTrick.length ? this.currentTrick[0].card.s : null;
+
+    // 1. If last trick: push to win if possible (strongest valid)
+    if(this.tricksRemaining() === 1){
+      return this._maxBy(valid, c=> this._cardScoreForEndgame(c, lead));
+    }
+
+    // 2. Pool pressure: if pool is large, be more aggressive
+    if(this.unclaimedPool >= 4){
+      // try minimal to win trick: prefer not using Ace unless necessary
+      const minimalBeat = this._minimalBeating(playerId, valid);
+      if(minimalBeat) return minimalBeat;
+    }
+
+    // 3. If leading and near endgame, try to save strong trump (Q/A/K) for final:
+    if(this.currentTrick.length === 0 && this.tricksRemaining() <= 3 && this._hasControl(playerId)){
+      const strongTrumps = valid.filter(c=> c.s === this.trump && c.r >= 12); // Q+
+      if(strongTrumps.length){
+        // If higher trumps appear to be gone (or likely gone) then save:
+        if(this._higherTrumpsLikelyGone()){
+          // play weakest non-trump or weakest trump that's NOT strong
+          const nonTrumps = valid.filter(c=> c.s !== this.trump);
+          if(nonTrumps.length) return this._minBy(nonTrumps, c=>c.r);
+          const weakTrumps = valid.filter(c=> c.s === this.trump && c.r < 12);
+          if(weakTrumps.length) return this._minBy(weakTrumps, c=>c.r);
+          // else must play a strong trump but prefer lowest strong
+          return this._minBy(strongTrumps, c=>c.r);
+        }
+      }
+    }
+
+    // 4. If not leading:
+    if(this.currentTrick.length > 0){
+      // if partner winning -> discard low safe
+      const curWin = currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
+      const curTeam = TEAM_OF[curWin.pid];
+      const myTeam = TEAM_OF[playerId];
+      if(curTeam === myTeam){
+        const nonTrump = valid.filter(c=> c.s !== this.trump);
+        return nonTrump.length ? this._minBy(nonTrump, c=>c.r) : this._minBy(valid, c=>c.r);
+      }
+      // opponent winning: try minimal beating
+      const beat = valid.filter(c=> compareStrength(strength(c, lead, this.trump), strength(curWin.card, lead, this.trump)) > 0);
+      if(beat.length){
+        // prefer same-suit beating that is minimal
+        const sameSuit = beat.filter(c=> c.s === curWin.card.s && c.s !== this.trump);
+        if(sameSuit.length) return this._minBy(sameSuit, c=>c.r);
+        // else prefer lowest trump that beats (avoid Ace if possible)
+        const trumps = beat.filter(c=> c.s === this.trump);
+        if(trumps.length){
+          const nonAce = trumps.filter(c=> c.r !== 14);
+          if(nonAce.length) return this._minBy(nonAce, c=>c.r);
+          return this._minBy(trumps, c=>c.r);
+        }
+        // else minimal beating
+        return this._minBy(beat, c=>c.r);
+      }
+      // can't beat -> dump lowest non-trump
+      const nonTr = valid.filter(c=> c.s !== this.trump);
+      if(nonTr.length) return this._minBy(nonTr, c=>c.r);
+      return this._minBy(valid, c=>c.r);
+    }
+
+    // 5. Leading general heuristic
+    if(this.currentTrick.length === 0){
+      // pick from longest suit, favor higher if early, medium-high if early, else low
+      const suitMap = {};
+      for(const c of hand) suitMap[c.s] = suitMap[c.s] ? suitMap[c.s].concat(c.r) : [c.r];
+      const nonTrumpSuits = Object.keys(suitMap).filter(s=> s !== this.trump);
+      if(nonTrumpSuits.length){
+        nonTrumpSuits.sort((a,b) => (suitMap[b].length - suitMap[a].length) || (Math.max(...suitMap[b]) - Math.max(...suitMap[a])));
+        const suit = nonTrumpSuits[0];
+        const candidates = valid.filter(c=> c.s === suit);
+        if(candidates.length){
+          if(this.trickNumber < 5) return this._maxBy(candidates, c=>c.r);
+          return this._maxBy(candidates, c=>c.r);
+        }
+      }
+      // fallback
+      const nonTrumps = valid.filter(c=> c.s !== this.trump);
+      return nonTrumps.length ? this._minBy(nonTrumps, c=>c.r) : this._minBy(valid, c=>c.r);
+    }
+
+    // ultimate fallback
+    return this._minBy(valid, c=>c.r);
+  }
+
+  // helpers for AI
+  _validFor(playerId){
+    const hand = this.hands[playerId];
+    if(this.currentTrick.length === 0) return this._sortHand(hand);
+    const lead = this.currentTrick[0].card.s;
+    const same = hand.filter(c=> c.s === lead);
+    return same.length ? this._sortHand(same) : this._sortHand(hand.slice());
+  }
+  _minBy(arr,fn){ return arr.reduce((a,b)=> fn(b) < fn(a) ? b : a ); }
+  _maxBy(arr,fn){ return arr.reduce((a,b)=> fn(b) > fn(a) ? b : a ); }
+  _hasControl(playerId){
+    if(this.trickNumber === 0) return false;
+    return this.lastTrickWinner === playerId && this._whoseTurn() === playerId && this.currentTrick.length === 0;
+  }
+  _higherTrumpsLikelyGone(){
+    // heuristic: if most high trumps are in seen cards (Q/A/K) or only few rounds left and many cards seen
+    if(!this.trump) return false;
+    const needed = [13,14]; // K,A
+    let remaining = new Set(needed);
+    for(const c of this.seenCards) if(c.s === this.trump && remaining.has(c.r)) remaining.delete(c.r);
+    // also if many cards played, assume unknown high trumps are less likely
+    if(remaining.size === 0) return true;
+    if(this.trickNumber >= 8 && remaining.size <=1) return true;
+    return false;
+  }
+  _minimalBeating(playerId, valid){
+    // given valid, the bot tries to minimally overtake current winner
+    if(this.currentTrick.length === 0) return null;
+    const lead = this.currentTrick[0].card.s;
+    const cur = currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
+    const curCard = cur.card;
+    const beating = valid.filter(c=> compareStrength(strength(c, lead, this.trump), strength(curCard, lead, this.trump)) > 0);
+    if(beating.length){
+      // try same-suit minimal
+      const same = beating.filter(c=> c.s === curCard.s && c.s !== this.trump);
+      if(same.length) return this._minBy(same, c=>c.r);
+      const trumps = beating.filter(c=> c.s === this.trump);
+      if(trumps.length){
+        const nonAce = trumps.filter(c=> c.r !== 14);
+        if(nonAce.length) return this._minBy(nonAce, c=>c.r);
+        return this._minBy(trumps, c=>c.r);
+      }
+      return this._minBy(beating, c=>c.r);
+    }
+    return null;
+  }
+
+  _cardScoreForEndgame(c, lead){
+    // prefer trumps and high ranks in last trick
+    let score = c.r;
+    if(c.s === this.trump) score += 50 + c.r;
+    if(c.s === lead) score += 10;
+    return score;
+  }
+}
+
+/* =========================
+   UI & Integration
+   ========================= */
+
+const logEl = document.getElementById('log');
+function writeLog(txt){
+  const line = `[${new Date().toLocaleTimeString()}] ${txt}`;
+  logEl.textContent += line + "\n";
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+/* UI pointers */
+const ui = {
+  youHand: document.getElementById('you-hand'),
+  chooser: document.getElementById('chooser'),
+  btnStart: document.getElementById('btn-start'),
+  btnNew: document.getElementById('btn-new'),
+  slots: {P1:document.getElementById('slot-P1'),P2:document.getElementById('slot-P2'),P3:document.getElementById('slot-P3'),P4:document.getElementById('slot-P4')},
+  info: {trump:document.getElementById('ui-trump'), pool:document.getElementById('ui-pool'), t1:document.getElementById('ui-t1'), t2:document.getElementById('ui-t2'), last:document.getElementById('ui-last'), starter:document.getElementById('ui-starter'), trick:document.getElementById('ui-trick')},
+  centerNote: document.getElementById('center-note')
+};
+
+let game = null;
+let uiState = {humanLocked:false};
+
+// create new game core
+function initGame(seed=null){
+  game = new GameCore(seed, {P1:'human',P2:'bot',P3:'bot',P4:'bot'});
+  updateAll();
+  clearTableSlots();
+}
+
+/* render helpers */
+function clearTableSlots(){
+  for(const p of PLAYERS) ui.slots[p].querySelectorAll('.card').forEach(n=>n.remove());
+}
+function placeOnTable(pid, card){
+  const slot = ui.slots[pid];
+  const el = document.createElement('div');
+  el.className = `card ${card.s==='Hearts'?'heart':card.s==='Diamonds'?'diamond':''}`;
+  el.textContent = cardStr(card);
+  el.style.minWidth='56px'; el.style.height='64px';
+  slot.appendChild(el);
+}
+function renderYourHand(){
+  ui.youHand.innerHTML = '';
+  const hand = game.hands.P1;
+  const {valid: validList} = game.getValidInvalid ? game.getValidInvalid('P1') : game.getValidInvalid('P1') ; // call compatibility
+  const validKeys = new Set((validList||[]).map(c=> `${c.r}-${c.s}`));
+  const grouped = {Spades:[],Hearts:[],Diamonds:[],Clubs:[]};
+  hand.forEach(c=> grouped[c.s].push(c));
+  for(const s of SUITS){
+    if(!grouped[s].length) continue;
+    const g = document.createElement('div'); g.className='group';
+    const t = document.createElement('div'); t.className='title'; t.textContent = `${s} ${SUIT_SYMBOL[s]}`;
+    g.appendChild(t);
+    grouped[s].forEach(c=>{
+      const key = `${c.r}-${c.s}`;
+      const btn = document.createElement('div');
+      btn.className = `card ${c.s==='Hearts'?'heart':c.s==='Diamonds'?'diamond':''}`;
+      btn.textContent = cardStr(c);
+      const isValid = validKeys.has(key);
+      btn.setAttribute('aria-disabled', String(!isValid));
+      if(isValid) btn.classList.add('glow');
+      btn.addEventListener('click', ()=>{
+        if(!isValid || uiState.humanLocked) return;
+        uiState.humanLocked = true;
+        // play card
+        try {
+          const res = game.playCard('P1', c);
+          writeLog(`You (P1) played ${cardStr(c)}`);
+          placeOnTable('P1', c);
+          updateAfterEvents(res.events);
+          // continue bots after human
+          setTimeout(()=> botSequence(game.starterIndex, game.currentTrick.length), 300);
+        } catch(err){
+          alert(err.message);
+        } finally { uiState.humanLocked = false; }
+      });
+      g.appendChild(btn);
+    });
+    ui.youHand.appendChild(g);
+  }
+}
+
+function updateInfo(){
+  ui.info.trump.textContent = game.trump ? `${game.trump} ${SUIT_SYMBOL[game.trump]}` : '—';
+  ui.info.pool.textContent = String(game.unclaimedPool);
+  ui.info.t1.textContent = String(game.teamTricks[1]);
+  ui.info.t2.textContent = String(game.teamTricks[2]);
+  ui.info.last.textContent = game.lastTrickWinner ? game.lastTrickWinner : '—';
+  ui.info.starter.textContent = PLAYERS[game.starterIndex] || '—';
+  ui.info.trick.textContent = String(game.trickNumber+1);
+}
+
+/* update everything for initial rendering */
+function updateAll(){
+  clearTableSlots();
+  renderYourHand();
+  updateInfo();
+  ui.centerNote.textContent = game.trump ? `Starter: ${PLAYERS[game.starterIndex]}` : 'Deal 5 → choose trump';
+}
+
+/* handle events list from engine */
+function updateAfterEvents(events){
+  if(!events || !events.length) return;
+  for(const e of events){
+    if(e.type === 'play'){
+      placeOnTable(e.player, e.card);
+    } else if(e.type === 'trick_complete'){
+      writeLog(`Trick ${e.trick_number} complete. Winner: ${e.winner} with ${cardStr(e.winning_card)}`);
+      // clear after slight delay
+      setTimeout(()=>{
+        // move last completed trick cards into last-trick slot visually (we already placed)
+        // reset table for next trick
+        setTimeout(()=> {
+          clearTableSlots();
+          updateInfo();
+        }, 600);
+      }, 300);
+    } else if(e.type === 'pool_captured'){
+      writeLog(`${e.by_player} captured pool = ${e.amount} (team ${e.team})`);
+    } else if(e.type === 'match_end'){
+      writeLog(`Match end. Team1 ${e.result.team_tricks[1]} | Team2 ${e.result.team_tricks[2]}. Trump: ${e.result.trump}`);
+      setTimeout(()=> {
+        alert(`Match finished.\nTeam1: ${e.result.team_tricks[1]}\nTeam2: ${e.result.team_tricks[2]}\nTrump: ${e.result.trump}`);
+      }, 200);
+    }
+  }
+  // after processing, update UI
+  renderYourHand();
+  updateInfo();
+}
+
+/* Bot sequence: starterIndex and offset */
+function botSequence(starterIndex, turnOffset){
+  if(game.isMatchOver()) {
+    updateInfo();
+    return;
+  }
+  if(turnOffset >= 4){
+    // trick completed already by engine in previous steps; begin next trick
+    setTimeout(()=> beginTrick(), 380);
+    return;
+  }
+  const playerIndex = (starterIndex + turnOffset) % 4;
+  const pname = PLAYERS[playerIndex];
+  if(pname === 'P1'){
+    // human turn mid-trick — highlight valid and return control
+    renderYourHand();
+    uiState.humanLocked = false;
+    return;
+  }
+  // bot plays
+  uiState.humanLocked = true;
+  // compute chosen card with small delay to emulate thinking
+  setTimeout(()=>{
+    const chosen = game._botChooseCard(pname);
+    // apply
+    const evs = game._applyPlay(pname, chosen);
+    writeLog(`${pname} played ${cardStr(chosen)}`);
+    updateAfterEvents(evs);
+    // continue sequence
+    botSequence(starterIndex, turnOffset + 1);
+  }, BOT_DELAY);
+}
+
+/* start trick loop */
+function beginTrick(){
+  if(game.isMatchOver()){
+    const res = game.finalizeMatch();
+    updateInfo();
+    writeLog(`Match finished. Team1 ${res.team_tricks[1]} | Team2 ${res.team_tricks[2]}`);
+    return;
+  }
+  // clear table slots
+  clearTableSlots();
+  game.currentTrick = [];
+  ui.centerNote.textContent = `Trick ${game.trickNumber+1} — Starter: ${PLAYERS[game.starterIndex]}`;
+  updateInfo();
+  // decide starter
+  if(PLAYERS[game.starterIndex] === 'P1'){
+    // human to play first
+    renderYourHand();
+    uiState.humanLocked = false;
+  } else {
+    // bots begin
+    uiState.humanLocked = true;
+    setTimeout(()=> botSequence(game.starterIndex, 0), BOT_DELAY);
+  }
+}
+
+/* UI control wiring */
+document.getElementById('btn-start').addEventListener('click', ()=>{
+  initGame(); // new GameCore instance
+  writeLog('=== New match started. Chooser: P1 ===');
+  // show chooser if P1 is chooser
+  if(game.chooserIsHuman()){
+    document.getElementById('chooser').style.display = 'block';
+    document.getElementById('btn-start').disabled = true;
+    document.getElementById('btn-new').disabled = true;
+    ui.centerNote.textContent = 'Pick trump (or Random)';
+    // show first five
+    const first5 = game.chooserFirstFive();
+    writeLog(`Chooser first five: ${first5.map(c=>cardStr(c)).join(', ')}`);
+  } else {
+    document.getElementById('chooser').style.display = 'none';
+  }
+  updateAll();
+});
+
+document.getElementById('btn-new').addEventListener('click', ()=>{
+  initGame();
+  writeLog('New match reset.');
+  document.getElementById('chooser').style.display = 'none';
+});
+
+document.querySelectorAll('.suit-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const s = b.dataset.suit;
+    try {
+      game.chooseTrumpManual(s);
+      writeLog(`You chose trump: ${s}`);
+      document.getElementById('chooser').style.display = 'none';
+      document.getElementById('btn-start').disabled = true;
+      document.getElementById('btn-new').disabled = false;
+      // Start trick loop
+      setTimeout(()=> beginTrick(), 300);
+    } catch(err){
+      alert(err.message);
+    }
+  });
+});
+
+document.getElementById('btn-random').addEventListener('click', ()=>{
+  game.chooseTrumpRandom();
+  writeLog(`You chose RANDOM trump -> ${game.trump}`);
+  document.getElementById('chooser').style.display = 'none';
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-new').disabled = false;
+  setTimeout(()=> beginTrick(), 300);
+});
+
+/* initialize UI */
+initGame();
+updateAll();
+writeLog('Ready. Click Start Match to play.');
+</script>
+</body>
+</html>
