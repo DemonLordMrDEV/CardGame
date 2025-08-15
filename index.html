@@ -2,217 +2,218 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Trick-Taking — You vs 3 Bots (All-JS)</title>
+<title>Trick-Taking — Minimal UI (Trump Picker)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#0e1113; --panel:#12161a; --muted:#9fb3ad; --ink:#e7f2ef;
-  --table-grad1:#1d6a35; --table-grad2:#0f3d20; --accent:#48e291; --accentText:#052815;
-  --line:#263342; --disabled:#3a4652; --gold:#f5d167; --warn:#ffb86b;
-}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-header{padding:12px 18px;text-align:center;font-size:24px;font-weight:800}
-.layout{display:grid;grid-template-columns:300px 1fr 360px;gap:14px;max-width:1400px;margin:0 auto;padding:10px}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
-.panel h3{margin:0 0 8px 0;font-size:13px;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
-#left{display:flex;flex-direction:column;gap:10px}
-#chooser{display:none;gap:8px;flex-wrap:wrap}
-.suits{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.btn{appearance:none;border:0;border-radius:10px;padding:10px 12px;font-weight:800;background:var(--accent);color:var(--accentText);cursor:pointer}
-.btn.secondary{background:#24313e;color:#d7ece5;border:1px solid var(--line)}
-.btn:disabled{opacity:.6;cursor:not-allowed}
-#you-hand{display:flex;gap:10px;justify-content:center;padding:6px;flex-wrap:nowrap;overflow:hidden}
-.group{display:flex;flex-direction:column;align-items:center}
-.group .title{font-size:12px;color:var(--muted);margin-bottom:6px}
-.card{display:inline-flex;align-items:center;justify-content:center;min-width:56px;height:72px;border-radius:10px;border:1px solid #2a3643;background:#212b35;color:#fff;margin:4px;padding:6px 10px;font-weight:800;font-size:18px;cursor:pointer;user-select:none;transition:transform .12s,opacity .12s,box-shadow .12s}
-.card[aria-disabled="true"]{cursor:not-allowed;opacity:.3;filter:grayscale(.35)}
-.card.glow{box-shadow:0 0 0 4px rgba(72,226,145,.12),0 6px 18px rgba(0,0,0,.4)}
-#table{padding:8px;border-radius:12px;background:linear-gradient(180deg,var(--table-grad1),var(--table-grad2));display:grid;grid-template-rows:auto 1fr auto;gap:8px;align-items:center;justify-items:center;min-height:520px;transform-origin:center center}
-.table-inner{width:100%;max-width:820px;display:grid;grid-template-rows:120px 1fr 120px;gap:6px;align-items:center}
-.row{display:flex;align-items:center;justify-content:center;gap:8px}
-.slot{width:140px;height:96px;border-radius:10px;border:2px dashed rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;position:relative;background:transparent}
-.slot .who{position:absolute;top:-18px;font-size:11px;color:#d9f0e6;opacity:.9}
-.played-card{width:92px;height:124px;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
-.played-card img{width:100%;height:100%;object-fit:cover;display:block}
-.center-note{color:#cfe8df;text-align:center;margin-top:6px;font-size:13px}
-#right{display:flex;flex-direction:column;gap:12px}
-.kv{display:flex;gap:10px;flex-wrap:wrap}
-.badge{display:inline-flex;align-items:center;gap:8px;background:#0f1519;border:1px solid var(--line);padding:8px 12px;border-radius:999px;font-weight:800}
-.stat{display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
-.sep{height:1px;background:var(--line);margin:8px 0}
-#log{height:260px;overflow:auto;background:#050708;border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre-line}
-.small{font-size:13px;color:var(--muted)}
-.center{display:flex;align-items:center;justify-content:center}
+  :root{
+    --bg:#0d1215; --felt1:#176735; --felt2:#0f3f21; --panel:#12171c; --line:#27323e;
+    --ink:#e9f3ef; --muted:#a4b6b0; --accent:#48e291; --accentInk:#072b18;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; overflow:hidden}
 
-/* card image styles (hands & backs) */
-.card-img { width:92px; height:124px; object-fit:cover; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.5); cursor:pointer; transition:transform .18s ease; }
-.card-img:active{ transform: translateY(-6px); }
-.card-back { width:56px; height:76px; object-fit:cover; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.45); }
+  /* Root layout: full screen, no scroll */
+  .root {
+    height:100vh; width:100vw; display:grid; gap:10px;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: 72px 1fr 160px;
+    grid-template-areas:
+      "title  side"
+      "table  side"
+      "p1hand side";
+    padding:10px; max-width:1400px; margin:0 auto;
+  }
 
-/* fanned opponent hands at bottom */
-.opponent-hands { display:flex; justify-content:space-between; gap:12px; margin-top:8px; }
-.opponent { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:120px; }
-.fan { display:flex; align-items:flex-end; position:relative; height:86px; }
-.fan img { margin-left:-34px; transition:transform .25s, opacity .2s; }
-.fan img:first-child { margin-left:0; }
+  header {
+    grid-area:title; display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:20px;
+  }
 
-/* animation helper for flying card to center */
-.fly-card {
-  position:fixed; z-index:9999; pointer-events:none; transition:transform .45s cubic-bezier(.2,.9,.3,1), opacity .3s;
-  width:92px; height:124px; object-fit:cover; border-radius:6px; box-shadow:0 12px 30px rgba(0,0,0,.6);
-}
+  .side { grid-area:side; display:flex; flex-direction:column; gap:10px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px; }
+  .controls { display:flex; flex-direction:column; gap:12px }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .btn { appearance:none; border:0; border-radius:12px; padding:10px 14px; font-weight:800; cursor:pointer; }
+  .btn.primary { background:var(--accent); color:var(--accentInk); }
+  .btn.secondary { background:#22303b; color:#d7ece5; border:1px solid var(--line); }
+  .badge { background:#0f151a; border:1px solid var(--line); padding:8px 12px; border-radius:999px; font-weight:800; display:inline-flex; gap:8px; align-items:center; }
 
-/* responsive tweaks */
-@media (max-width:1000px){
-  .layout{grid-template-columns:1fr; padding:8px}
-  #right{order:3}
-  #left{order:1}
-  #table{order:2}
-  .table-inner{max-width:100%}
-}
+  /* Table */
+  .table {
+    grid-area:table; background:linear-gradient(180deg,var(--felt1),var(--felt2)); border-radius:16px;
+    border:1px solid #0c2c19; position:relative; display:grid; place-items:center;
+  }
+  .arena {
+    width:min(960px, 92vw); height:min(520px, 56vh);
+    position:relative; display:grid;
+    grid-template-columns: 140px 1fr 140px;
+    grid-template-rows: 110px 1fr 110px;
+    align-items:center; justify-items:center;
+  }
+
+  .seat { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .seat .name { font-size:12px; color:var(--muted) }
+
+  .p3 { grid-column:2; grid-row:1; }
+  .p2 { grid-column:3; grid-row:2; }
+  .p4 { grid-column:1; grid-row:2; }
+  .center { grid-column:2; grid-row:2; position:relative; width:280px; height:220px; }
+
+  .slot { width:84px; height:116px; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:transparent; }
+  .slot img { width:100%; height:100%; object-fit:cover; display:block; }
+
+  .slot.p3 { position:absolute; top:0; left:50%; transform:translate(-50%, 0); }
+  .slot.p1 { position:absolute; bottom:0; left:50%; transform:translate(-50%, 0); }
+  .slot.p2 { position:absolute; top:50%; right:0; transform:translate(0, -50%); }
+  .slot.p4 { position:absolute; top:50%; left:0; transform:translate(0, -50%); }
+
+  .note { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:12px; color:#cfe8df; opacity:.9; }
+
+  /* Hands */
+  .p1hand { grid-area:p1hand; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .hand-row { display:flex; gap:8px; padding:8px 10px; overflow:hidden; max-width:95vw; }
+
+  .card-img { width:64px; height:90px; object-fit:cover; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.45); cursor:pointer; transition:.16s transform; }
+  .card-img:hover { transform:translateY(-4px); }
+  .card-img:active { transform:translateY(-8px); }
+
+  .count { font-size:12px; color:#d0ded8; opacity:.9 }
+
+  .lasttrick { display:grid; grid-template-columns: repeat(4, 60px); gap:8px; place-items:center; }
+  .mini { width:54px; height:76px; border-radius:6px; overflow:hidden; }
+  .mini img { width:100%; height:100%; object-fit:cover; display:block; }
+
+  .fly { position:fixed; z-index:9999; pointer-events:none; width:64px; height:90px; border-radius:8px; box-shadow:0 12px 32px rgba(0,0,0,.6);
+         transition:transform .5s cubic-bezier(.2,.9,.3,1), opacity .35s; }
+
+  h3 { margin:0 0 8px 0; font-size:13px; color:var(--muted); letter-spacing:.3px; text-transform:uppercase; }
+
+  /* Trump modal */
+  .modal {
+    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.45); z-index:50;
+  }
+  .modal .sheet { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; width:min(520px, 92vw); }
+  .suits { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:8px; }
+  .suitbtn { padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#22303b; color:#d7ece5; font-weight:800; cursor:pointer; }
+  .suitbtn.primary { background:var(--accent); color:var(--accentInk); border:0; }
 </style>
 </head>
 <body>
-<header>Trick-Taking — Play: You vs 3 Bots</header>
+  <div class="root">
+    <header>Trick-Taking — Minimal UI</header>
 
-<div class="layout">
-  <!-- Left: Hand + chooser + controls -->
-  <div id="left" class="panel">
-    <h3>Your Hand</h3>
-    <div id="you-hand"></div>
+    <!-- TABLE -->
+    <div class="table card">
+      <div class="arena">
+        <!-- Top: P3 -->
+        <div class="seat p3">
+          <div class="name">P3</div>
+          <div class="count" id="count-P3">(0 cards)</div>
+        </div>
 
-    <div id="chooser" class="panel" style="padding:10px">
-      <div class="small center">You are the chooser. Pick a trump or choose Random (13th card decides)</div>
-      <div class="suits" style="margin-top:10px">
-        <button class="btn secondary suit-btn" data-suit="Spades">Spades ♠</button>
-        <button class="btn secondary suit-btn" data-suit="Hearts">Hearts ♥</button>
-        <button class="btn secondary suit-btn" data-suit="Diamonds">Diamonds ♦</button>
-        <button class="btn secondary suit-btn" data-suit="Clubs">Clubs ♣</button>
-        <button class="btn" id="btn-random">Random</button>
+        <!-- Left: P4 -->
+        <div class="seat p4">
+          <div class="name">P4</div>
+          <div class="count" id="count-P4">(0 cards)</div>
+        </div>
+
+        <!-- Right: P2 -->
+        <div class="seat p2">
+          <div class="name">P2</div>
+          <div class="count" id="count-P2">(0 cards)</div>
+        </div>
+
+        <!-- Center: current trick -->
+        <div class="center" id="center">
+          <div class="slot p3" id="slot-P3"></div>
+          <div class="slot p2" id="slot-P2"></div>
+          <div class="slot p1" id="slot-P1"></div>
+          <div class="slot p4" id="slot-P4"></div>
+          <div class="note" id="center-note">Click “Start Match” to deal 5 cards and choose trump</div>
+        </div>
       </div>
     </div>
 
-    <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-      <button id="btn-start" class="btn">Start Match</button>
-      <button id="btn-new" class="btn secondary" disabled>New Match</button>
+    <!-- P1 hand (bottom) -->
+    <div class="p1hand card">
+      <div class="hand-row" id="you-hand"></div>
     </div>
 
-    <div style="margin-top:8px" class="small">Tips: click a card image to play. Opponents shown as card-backs. Bots have thinking delays for realism.</div>
+    <!-- RIGHT SIDE -->
+    <aside class="side">
+      <div class="card controls">
+        <div class="row"><h3>Controls</h3><button id="btn-start" class="btn primary">Start Match</button></div>
+        <div class="row"><span class="badge">Trump: <strong id="ui-trump" style="margin-left:6px">—</strong></span></div>
+        <div class="row"><span class="badge">Pool: <strong id="ui-pool" style="margin-left:6px">0</strong></span></div>
+        <div class="row"><span class="badge">T1 (P1+P3): <strong id="ui-t1" style="margin-left:6px">0</strong></span></div>
+        <div class="row"><span class="badge">T2 (P2+P4): <strong id="ui-t2" style="margin-left:6px">0</strong></span></div>
+        <div class="row"><span class="badge">Starter: <strong id="ui-starter" style="margin-left:6px">—</strong></span></div>
+        <div class="row"><span class="badge">Trick #: <strong id="ui-trick" style="margin-left:6px">0</strong></span></div>
+      </div>
+
+      <div class="card">
+        <h3>Last Trick</h3>
+        <div class="lasttrick" id="last-trick">
+          <div class="mini" id="lt-P3"></div>
+          <div class="mini" id="lt-P2"></div>
+          <div class="mini" id="lt-P1"></div>
+          <div class="mini" id="lt-P4"></div>
+        </div>
+      </div>
+    </aside>
   </div>
 
-  <!-- Center: Table -->
-  <div id="table" class="panel">
-    <div class="table-inner">
-      <div class="row" style="justify-content:center">
-        <div class="slot" id="slot-P2"><div class="who">P2</div>
-          <div class="played-card" id="pc-P2"></div>
-        </div>
+  <!-- Trump Picker Modal -->
+  <div class="modal" id="trump-modal">
+    <div class="sheet">
+      <h3>Choose Trump (or pick Random)</h3>
+      <div class="suits">
+        <button class="suitbtn" data-suit="Spades">Spades ♠</button>
+        <button class="suitbtn" data-suit="Hearts">Hearts ♥</button>
+        <button class="suitbtn" data-suit="Diamonds">Diamonds ♦</button>
+        <button class="suitbtn" data-suit="Clubs">Clubs ♣</button>
+        <button class="suitbtn primary" data-suit="__RANDOM__">Random</button>
       </div>
-
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <div class="slot" id="slot-P3"><div class="who">P3</div>
-          <div class="played-card" id="pc-P3"></div>
-        </div>
-        <div class="slot" id="slot-P4"><div class="who">P4</div>
-          <div class="played-card" id="pc-P4"></div>
-        </div>
-      </div>
-
-      <div class="row" style="flex-direction:column;align-items:center">
-        <div class="slot" id="slot-P1"><div class="who">You (P1)</div>
-          <div class="played-card" id="pc-P1"></div>
-        </div>
-        <div id="center-note" class="small">Click "Start Match" to begin (deals 5 to everyone)</div>
-      </div>
-    </div>
-
-    <!-- Opponent fanned hands (backs) -->
-    <div style="width:100%;max-width:820px;margin-top:10px;">
-      <div class="opponent-hands">
-        <div class="opponent"><div class="small">P2</div><div class="fan" id="fan-P2"></div></div>
-        <div class="opponent"><div class="small">P3</div><div class="fan" id="fan-P3"></div></div>
-        <div class="opponent"><div class="small">P4</div><div class="fan" id="fan-P4"></div></div>
+      <div class="row" style="margin-top:10px; justify-content:center; color:var(--muted); font-size:12px;">
+        You’ll see 5 cards first. After choosing trump, everyone gets 13 and play begins.
       </div>
     </div>
   </div>
-
-  <!-- Right: Info + log -->
-  <div id="right">
-    <div class="panel">
-      <h3>Match Info</h3>
-      <div class="kv">
-        <div class="badge">Trump: <strong id="ui-trump" style="margin-left:6px">—</strong></div>
-        <div class="badge">Pool: <strong id="ui-pool" style="margin-left:6px">0</strong></div>
-      </div>
-      <div class="sep"></div>
-      <div class="stat"><div class="badge">Team 1 (P1 + P3)</div><strong id="ui-t1">0</strong></div>
-      <div class="stat"><div class="badge">Team 2 (P2 + P4)</div><strong id="ui-t2">0</strong></div>
-      <div class="sep"></div>
-      <div class="stat"><span>Last Trick Winner</span><strong id="ui-last">—</strong></div>
-      <div class="stat"><span>Starter</span><strong id="ui-starter">—</strong></div>
-      <div class="stat"><span>Trick #</span><strong id="ui-trick">0</strong></div>
-    </div>
-
-    <div class="panel">
-      <h3>Log</h3>
-      <div id="log"></div>
-    </div>
-  </div>
-</div>
-
-<!-- invisible fly container -->
-<div id="fly-root"></div>
 
 <script>
-/* =========================
-   Game Engine (JS port + upgrade)
-   ========================= */
+/* ========= Cards asset helpers ========= */
 const SUITS = ["Spades","Hearts","Diamonds","Clubs"];
 const SUIT_SYMBOL = {Spades:"♠",Hearts:"♥",Diamonds:"♦",Clubs:"♣"};
-const RANKS = [2,3,4,5,6,7,8,9,10,11,12,13,14]; // 11=J,12=Q,13=K,14=A
+const RANKS = [2,3,4,5,6,7,8,9,10,11,12,13,14];
 const RANK_LABEL = {11:"J",12:"Q",13:"K",14:"A"};
-const PLAYERS = ["P1","P2","P3","P4"];
+const PLAYERS = ["P1","P4","P3","P2"]; // CCW turn order
 const TEAM_OF = {P1:1,P3:1,P2:2,P4:2};
-const BOT_DELAY = 520; // ms - think delay
 
+const rankToName = {11:'jack',12:'queen',13:'king',14:'ace'};
+const suitToFile = {Spades:'spades',Hearts:'hearts',Diamonds:'diamonds',Clubs:'clubs'};
 function rankLabel(r){ return RANK_LABEL[r] || String(r); }
 function cardStr(c){ return `${rankLabel(c.r)}${SUIT_SYMBOL[c.s]}`; }
-function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
-
-function createDeck(){
-  const d=[];
-  for(const s of SUITS) for(const r of RANKS) d.push({r,s});
-  return d;
-}
-function shuffle(arr, rng=Math){ // Fisher-Yates
-  for(let i=arr.length-1;i>0;i--){
-    const j = Math.floor((rng.random?rng.random():Math.random())*(i+1));
-    [arr[i],arr[j]]=[arr[j],arr[i]];
-  }
-  return arr;
+function rankToFile(r){ return rankToName[r] || String(r); }
+function getCardFileName(card){
+  return `PNG-cards-1.3/${rankToFile(card.r)}_of_${suitToFile[card.s]}.png`;
 }
 
-function strength(card, leadSuit, trump){
-  return [(trump && card.s===trump)?1:0, (leadSuit && card.s===leadSuit)?1:0, card.r];
-}
-function compareStrength(a,b){
-  for(let i=0;i<3;i++){ if(a[i]>b[i]) return 1; if(a[i]<b[i]) return -1; } return 0;
-}
+/* ========= Engine (same logic, with manual/random trump) ========= */
+function createDeck(){ const d=[]; for(const s of SUITS) for(const r of RANKS) d.push({r,s}); return d; }
+function shuffle(a,rng=Math){ for(let i=a.length-1;i>0;i--){ const j=Math.floor((rng.random?rng.random():Math.random())*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function strength(card, leadSuit, trump){ return [(trump && card.s===trump)?1:0, (leadSuit && card.s===leadSuit)?1:0, card.r]; }
+function cmp(a,b){ for(let i=0;i<3;i++){ if(a[i]>b[i]) return 1; if(a[i]<b[i]) return -1; } return 0; }
 function currentWinner(played, trump){
   if(!played.length) return null;
   const lead = played[0].card.s;
-  let best = played[0]; let bestScore = strength(best.card, lead, trump);
-  for(const p of played.slice(1)){
-    const sc = strength(p.card, lead, trump);
-    if(compareStrength(sc,bestScore) > 0){ best = p; bestScore = sc; }
-  }
-  return best; // {idx, pid, card}
+  let best = played[0], bestScore = strength(best.card, lead, trump);
+  for(const p of played.slice(1)){ const sc = strength(p.card, lead, trump); if(cmp(sc,bestScore)>0){ best=p; bestScore=sc; } }
+  return best;
 }
 
-/* ===== GameCore class ===== */
 class GameCore {
   constructor(seed=null, playersMode=null){
     this.rng = seed ? this._seededRandom(seed) : Math;
@@ -220,683 +221,328 @@ class GameCore {
     if(playersMode) Object.assign(this.playersMode, playersMode);
     this.reset();
   }
+  _seededRandom(seed){ let t=seed>>>0; return { random(){ t+=0x6D2B79F5; let r=Math.imul(t^t>>>15,1|t); r^=r+Math.imul(r^r>>>7,61|r); return ((r^r>>>14)>>>0)/4294967296; } }; }
+  reset(){ this.matchPoints={1:0,2:0}; this.resetForNewSeries(); }
+  resetForNewSeries(){ this.chooserIndex=0; this.startNewMatch_Deal5(); }
 
-  _seededRandom(seed){
-    let t = seed >>> 0;
-    return {
-      random(){
-        t += 0x6D2B79F5;
-        let r = Math.imul(t ^ t >>> 15, 1 | t);
-        r ^= r + Math.imul(r ^ r >>> 7, 61 | r);
-        return ((r ^ r >>> 14) >>> 0) / 4294967296;
-      }
-    };
-  }
-
-  reset(){
-    this.matchPoints = {1:0,2:0};
-    this.resetForNewSeries();
-  }
-
-  resetForNewSeries(){
-    this.chooserIndex = 0; // who chooses trump (0..3) -> P1 initially
-    this.startNewMatch();
-  }
-
-  startNewMatch(){
-    this.deck = createDeck();
-    shuffle(this.deck, this.rng);
-    this.hands = {P1:[],P2:[],P3:[],P4:[]};
+  startNewMatch_Deal5(){
+    this.deck=createDeck(); shuffle(this.deck,this.rng);
+    this.hands={P1:[],P2:[],P3:[],P4:[]};
     for(let i=0;i<5;i++) for(const p of PLAYERS) this.hands[p].push(this.deck.pop());
-    for(const p of PLAYERS) this.hands[p] = this._sortHand(this.hands[p]);
-    this.trump = null;
-    this.chosenRandom = false;
-    this.unclaimedPool = 0;
-    this.teamTricks = {1:0,2:0};
-    this.playerTricks = {P1:0,P2:0,P3:0,P4:0};
-    this.matchLog = [];
-    this.lastTrickWinner = null;
-    this.consecutiveCount = 0;
-    this.trickNumber = 0;
-    this.currentTrick = []; // [{idx,pid,card}]
-    this.starterIndex = this.chooserIndex;
-    this.lastCompletedTrick = [];
-    this.seenCards = [];
-    this.pendingResolve = false;
+    for(const p of PLAYERS) this.hands[p]=this._sortHand(this.hands[p]);
+    this.trump=null; this.chosenRandom=false; this.unclaimedPool=0;
+    this.teamTricks={1:0,2:0}; this.playerTricks={P1:0,P2:0,P3:0,P4:0};
+    this.matchLog=[]; this.lastTrickWinner=null; this.consecutiveCount=0;
+    this.trickNumber=0; this.currentTrick=[]; this.starterIndex=this.chooserIndex;
+    this.lastCompletedTrick=[]; this.seenCards=[]; this.pendingResolve=false;
   }
 
-  _sortHand(hand){
-    const order = {Spades:0,Hearts:1,Diamonds:2,Clubs:3};
-    return hand.slice().sort((a,b)=> order[a.s]-order[b.s] || b.r - a.r);
-  }
-
-  chooserIsHuman(){ return this.chooserIndex === 0; }
-  chooserFirstFive(){ return clone(this.hands[PLAYERS[this.chooserIndex]].slice(0,5)); }
-
-  chooseTrumpManual(suit){
-    if(!SUITS.includes(suit)) throw new Error("Invalid suit");
-    this.trump = suit; this.chosenRandom=false;
-    this._finishDeal();
-    return this.getStateView();
-  }
-
+  // Complete dealing to 13 & set trump based on RANDOM up-card rule
   chooseTrumpRandom(){
-    this.chosenRandom = true;
-    const chooser = PLAYERS[this.chooserIndex];
-    while(Object.values(this.hands).some(h=>h.length < 13)){
+    this.chosenRandom=true;
+    const chooser=PLAYERS[this.chooserIndex];
+    while(Object.values(this.hands).some(h=>h.length<13)){
       for(const p of PLAYERS){
-        if(this.hands[p].length < 13){
-          const c = this.deck.pop();
-          this.hands[p].push(c);
-          if(p === chooser && this.hands[p].length === 13){
-            this.trump = c.s;
-          }
+        if(this.hands[p].length<13){
+          const c=this.deck.pop(); this.hands[p].push(c);
+          if(p===chooser && this.hands[p].length===13){ this.trump=c.s; }
         }
       }
     }
-    for(const p of PLAYERS) this.hands[p] = this._sortHand(this.hands[p]);
-    this.starterIndex = this.chooserIndex;
+    for(const p of PLAYERS) this.hands[p]=this._sortHand(this.hands[p]);
+    this.starterIndex=this.chooserIndex;
     return this.getStateView();
   }
 
-  _finishDeal(){
-    for(const p of PLAYERS) while(this.hands[p].length < 13) this.hands[p].push(this.deck.pop());
-    for(const p of PLAYERS) this.hands[p] = this._sortHand(this.hands[p]);
-    this.starterIndex = this.chooserIndex;
+  // Complete dealing to 13 & set trump to chosen suit
+  chooseTrumpManual(suit){
+    this.trump = suit;
+    while(Object.values(this.hands).some(h=>h.length<13)){
+      for(const p of PLAYERS){
+        if(this.hands[p].length<13){
+          const c=this.deck.pop(); this.hands[p].push(c);
+        }
+      }
+    }
+    for(const p of PLAYERS) this.hands[p]=this._sortHand(this.hands[p]);
+    this.starterIndex=this.chooserIndex;
+    return this.getStateView();
   }
 
+  _sortHand(hand){ const o={Spades:0,Hearts:1,Diamonds:2,Clubs:3}; return hand.slice().sort((a,b)=> o[a.s]-o[b.s] || b.r-a.r); }
+  chooserIsHuman(){ return this.chooserIndex===0; }
   getStateView(forPlayer=null){
-    const handsView = {};
-    for(const p of PLAYERS){
-      if(forPlayer==null || forPlayer===p) handsView[p] = clone(this.hands[p]);
-      else handsView[p] = {count: this.hands[p].length};
-    }
+    const hv={}; for(const p of PLAYERS){ hv[p]= (forPlayer==null||forPlayer===p) ? this.hands[p].slice() : {count:this.hands[p].length}; }
     return {
-      playersMode: clone(this.playersMode),
-      trump: this.trump,
-      chooser: PLAYERS[this.chooserIndex],
-      starter: PLAYERS[this.starterIndex],
-      trickNumber: this.trickNumber+1,
-      unclaimedPool: this.unclaimedPool,
-      teamTricks: clone(this.teamTricks),
-      playerTricks: clone(this.playerTricks),
-      currentTrick: this.currentTrick.map(x=>({player: x.pid, card: clone(x.card)})),
-      lastCompletedTrick: this.lastCompletedTrick.map(x=>({player:x[0], card: clone(x[1])})),
-      lastTrickWinner: this.lastTrickWinner,
-      hands: handsView,
-      isOver: this.isMatchOver(),
-      tricksRemaining: this.tricksRemaining()
+      trump:this.trump, chooser:PLAYERS[this.chooserIndex], starter:PLAYERS[this.starterIndex],
+      trickNumber:this.trickNumber+1, unclaimedPool:this.unclaimedPool, teamTricks:{...this.teamTricks},
+      playerTricks:{...this.playerTricks}, currentTrick:this.currentTrick.map(x=>({player:x.pid,card:{...x.card}})),
+      lastCompletedTrick:this.lastCompletedTrick.map(x=>({player:x[0],card:{...x[1]}})),
+      lastTrickWinner:this.lastTrickWinner, hands:hv, isOver:this.isMatchOver(), tricksRemaining:this.tricksRemaining()
     };
   }
-
-  isMatchOver(){ return PLAYERS.every(p=>this.hands[p].length === 0); }
-  tricksRemaining(){ return 13 - this.trickNumber; }
+  isMatchOver(){ return PLAYERS.every(p=>this.hands[p].length===0); }
+  tricksRemaining(){ return 13-this.trickNumber; }
+  _whoseTurn(){ const starter=this.starterIndex; const offset=this.currentTrick.length%4; return PLAYERS[(starter+offset)%4]; }
 
   getValidInvalid(playerId){
-    if(!PLAYERS.includes(playerId)) throw new Error("Bad playerId");
-    const hand = this.hands[playerId];
-    if(this.currentTrick.length === 0) return {valid: this._sortHand(hand), invalid: []};
-    const lead = this.currentTrick[0].card.s;
-    const follow = hand.filter(c=> c.s === lead);
-    const valid = follow.length ? this._sortHand(follow) : this._sortHand(hand.slice());
-    const invalid = hand.filter(c=> !valid.some(v=>v.r===c.r && v.s===c.s));
-    return {valid: clone(valid), invalid: clone(this._sortHand(invalid))};
-  }
-
-  _whoseTurn(){
-    const starter = this.starterIndex;
-    const offset = this.currentTrick.length % 4;
-    return PLAYERS[(starter + offset) % 4];
+    const hand=this.hands[playerId];
+    if(this.currentTrick.length===0) return {valid:this._sortHand(hand), invalid:[]};
+    const lead=this.currentTrick[0].card.s;
+    const follow=hand.filter(c=>c.s===lead);
+    const valid=follow.length?this._sortHand(follow):this._sortHand(hand.slice());
+    const invalid=hand.filter(c=>!valid.some(v=>v.r===c.r && v.s===c.s));
+    return {valid:[...valid], invalid:this._sortHand(invalid)};
   }
 
   playCard(playerId, card){
-    if(this._whoseTurn() !== playerId) throw new Error("Not player's turn");
-    const idx = this.hands[playerId].findIndex(c=> c.r===card.r && c.s===card.s);
-    if(idx === -1) throw new Error("Card not in hand");
+    if(this._whoseTurn()!==playerId) throw new Error("Not player's turn");
+    const idx=this.hands[playerId].findIndex(c=>c.r===card.r && c.s===card.s);
+    if(idx===-1) throw new Error("Card not in hand");
     if(this.currentTrick.length){
-      const lead = this.currentTrick[0].card.s;
-      if(this.hands[playerId].some(c=>c.s===lead) && card.s !== lead) throw new Error("Must follow suit");
+      const lead=this.currentTrick[0].card.s;
+      if(this.hands[playerId].some(c=>c.s===lead) && card.s!==lead) throw new Error("Must follow suit");
     }
     this.hands[playerId].splice(idx,1);
-    this.currentTrick.push({idx: PLAYERS.indexOf(playerId), pid: playerId, card: card});
-    this.seenCards.push(card);
-    const events = [{type:'play', player:playerId, card: clone(card)}];
-    if(this.currentTrick.length === 4){
-      const p = this._resolveTrick();
-      events.push(...p);
-    }
-    return {events, state: this.getStateView()};
+    this.currentTrick.push({idx:PLAYERS.indexOf(playerId), pid:playerId, card:card});
+    const events=[{type:'play', player:playerId, card:{...card}}];
+    if(this.currentTrick.length===4){ events.push(...this._resolveTrick()); }
+    return {events, state:this.getStateView()};
   }
 
   _resolveTrick(){
-    const winnerObj = currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
-    const winnerIdx = winnerObj.idx;
-    const winnerName = PLAYERS[winnerIdx];
-    const winningCard = winnerObj.card;
-    this.lastCompletedTrick = this.currentTrick.map(x=> [x.pid, clone(x.card)]);
-    this.currentTrick = [];
-    const prevWinner = this.lastTrickWinner;
-    this.lastTrickWinner = winnerName;
-    this.starterIndex = winnerIdx;
-    this.trickNumber += 1;
-
-    this.unclaimedPool += 1;
-    if(prevWinner === winnerName) this.consecutiveCount += 1; else this.consecutiveCount = 1;
-
-    const events = [];
-    if(this.consecutiveCount >= 2){
-      const team = TEAM_OF[winnerName];
-      const captured = this.unclaimedPool;
-      this.teamTricks[team] += captured;
-      this.playerTricks[winnerName] += captured;
-      this.unclaimedPool = 0;
-      this.consecutiveCount = 0;
-      events.push({type:'pool_captured', by_player: winnerName, team, amount: captured});
+    const winnerObj=currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
+    const winnerIdx=winnerObj.idx; const winnerName=PLAYERS[winnerIdx]; const winningCard=winnerObj.card;
+    this.lastCompletedTrick=this.currentTrick.map(x=> [x.pid, {...x.card}] );
+    this.currentTrick=[]; const prevWinner=this.lastTrickWinner; this.lastTrickWinner=winnerName; this.starterIndex=winnerIdx;
+    this.trickNumber+=1; this.unclaimedPool+=1; this.consecutiveCount = (prevWinner===winnerName) ? this.consecutiveCount+1 : 1;
+    const events=[];
+    if(this.consecutiveCount>=2){
+      const team=TEAM_OF[winnerName], captured=this.unclaimedPool;
+      this.teamTricks[team]+=captured; this.playerTricks[winnerName]+=captured;
+      this.unclaimedPool=0; this.consecutiveCount=0;
+      events.push({type:'pool_captured', by_player:winnerName, team, amount:captured});
     }
-
-    events.push({type:'trick_complete', trick_number:this.trickNumber, winner:winnerName, winning_card: clone(winningCard)});
-    if(this.isMatchOver()){
-      const res = this.finalizeMatch();
-      events.push({type:'match_end', result: res});
-    }
-    const readable = this.lastCompletedTrick.map(x=>[x[0], cardStr(x[1])]);
-    this.matchLog.push({trick:this.trickNumber, played:readable, winner:winnerName});
+    events.push({type:'trick_complete', trick_number:this.trickNumber, winner:winnerName, winning_card:{...winningCard}});
+    if(this.isMatchOver()){ const res=this.finalizeMatch(); events.push({type:'match_end', result:res}); }
     return events;
   }
 
   finalizeMatch(){
-    if(this.unclaimedPool > 0 && this.lastTrickWinner){
-      const t = TEAM_OF[this.lastTrickWinner];
-      this.teamTricks[t] += this.unclaimedPool;
-      this.playerTricks[this.lastTrickWinner] += this.unclaimedPool;
-      this.unclaimedPool = 0;
+    if(this.unclaimedPool>0 && this.lastTrickWinner){
+      const t=TEAM_OF[this.lastTrickWinner];
+      this.teamTricks[t]+=this.unclaimedPool; this.playerTricks[this.lastTrickWinner]+=this.unclaimedPool; this.unclaimedPool=0;
     }
-    return {team_tricks: clone(this.teamTricks), player_tricks: clone(this.playerTricks), trump:this.trump, last_trick_winner:this.lastTrickWinner};
+    return {team_tricks:{...this.teamTricks}, player_tricks:{...this.playerTricks}, trump:this.trump, last_trick_winner:this.lastTrickWinner};
   }
 
-  autoPlayUntilHuman(onMove=null){
-    const moves = [], events = [];
-    if(this.trump === null) return {moves, events, state: this.getStateView()};
-    while(true){
-      if(this.isMatchOver()){
-        const res=this.finalizeMatch();
-        events.push({type:'match_end', result:res});
-        break;
-      }
-      const cur = this._whoseTurn();
-      if(this.playersMode[cur] !== 'bot') break;
-      const ct = this._botChooseCard(cur);
-      const ev = this._applyPlay(cur, ct);
-      moves.push({player: cur, card: clone(ct)});
-      events.push(...ev);
-      if(onMove) onMove({player:cur, card:clone(ct), events:clone(ev)});
-    }
-    return {moves, events, state: this.getStateView()};
+  _validFor(pid){
+    const h=this.hands[pid];
+    if(this.currentTrick.length===0) return this._sortHand(h);
+    const lead=this.currentTrick[0].card.s; const same=h.filter(c=>c.s===lead);
+    return same.length?this._sortHand(same):this._sortHand(h.slice());
   }
-
-  _applyPlay(playerId, ct){
-    const idx = this.hands[playerId].findIndex(c=>c.r===ct.r && c.s===ct.s);
-    if(idx === -1) throw new Error("card missing in _applyPlay");
-    this.hands[playerId].splice(idx,1);
-    this.currentTrick.push({idx:PLAYERS.indexOf(playerId), pid:playerId, card:ct});
-    this.seenCards.push(ct);
-    const events = [{type:'play', player:playerId, card: clone(ct)}];
-    if(this.currentTrick.length === 4){
-      events.push(...this._resolveTrick());
+  _minBy(a,f){ return a.reduce((x,y)=> f(y)<f(x)?y:x ); }
+  _maxBy(a,f){ return a.reduce((x,y)=> f(y)>f(x)?y:x ); }
+  _botChooseCard(pid){
+    const valid=this._validFor(pid);
+    if(this.currentTrick.length===0){ // lead low-ish
+      const nonTr=valid.filter(c=>c.s!==this.trump);
+      return nonTr.length?this._minBy(nonTr,c=>c.r):this._minBy(valid,c=>c.r);
+    } else {
+      const lead=this.currentTrick[0].card.s;
+      const cur=currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
+      const beat=valid.filter(c=> {
+        const a=strength(c, lead, this.trump), b=strength(cur.card, lead, this.trump);
+        return cmp(a,b)>0;
+      });
+      return beat.length?this._minBy(beat,c=>c.r):this._minBy(valid,c=>c.r);
     }
+  }
+  _applyPlay(pid, ct){
+    const idx=this.hands[pid].findIndex(c=>c.r===ct.r && c.s===ct.s);
+    if(idx===-1) throw new Error("card missing in _applyPlay");
+    this.hands[pid].splice(idx,1);
+    this.currentTrick.push({idx:PLAYERS.indexOf(pid), pid, card:ct});
+    const events=[{type:'play', player:pid, card:{...ct}}];
+    if(this.currentTrick.length===4){ events.push(...this._resolveTrick()); }
     return events;
   }
-
-  _botChooseCard(playerId){
-    const hand = this.hands[playerId].slice();
-    const valid = this._validFor(playerId);
-    const lead = this.currentTrick.length ? this.currentTrick[0].card.s : null;
-
-    if(this.tricksRemaining() === 1){
-      return this._maxBy(valid, c=> this._cardScoreForEndgame(c, lead));
-    }
-
-    if(this.unclaimedPool >= 4){
-      const minimalBeat = this._minimalBeating(playerId, valid);
-      if(minimalBeat) return minimalBeat;
-    }
-
-    if(this.currentTrick.length === 0 && this.tricksRemaining() <= 3 && this._hasControl(playerId)){
-      const strongTrumps = valid.filter(c=> c.s === this.trump && c.r >= 12);
-      if(strongTrumps.length){
-        if(this._higherTrumpsLikelyGone()){
-          const nonTrumps = valid.filter(c=> c.s !== this.trump);
-          if(nonTrumps.length) return this._minBy(nonTrumps, c=>c.r);
-          const weakTrumps = valid.filter(c=> c.s === this.trump && c.r < 12);
-          if(weakTrumps.length) return this._minBy(weakTrumps, c=>c.r);
-          return this._minBy(strongTrumps, c=>c.r);
-        }
-      }
-    }
-
-    if(this.currentTrick.length > 0){
-      const curWin = currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
-      const curTeam = TEAM_OF[curWin.pid];
-      const myTeam = TEAM_OF[playerId];
-      if(curTeam === myTeam){
-        const nonTrump = valid.filter(c=> c.s !== this.trump);
-        return nonTrump.length ? this._minBy(nonTrump, c=>c.r) : this._minBy(valid, c=>c.r);
-      }
-      const beat = valid.filter(c=> compareStrength(strength(c, lead, this.trump), strength(curWin.card, lead, this.trump)) > 0);
-      if(beat.length){
-        const sameSuit = beat.filter(c=> c.s === curWin.card.s && c.s !== this.trump);
-        if(sameSuit.length) return this._minBy(sameSuit, c=>c.r);
-        const trumps = beat.filter(c=> c.s === this.trump);
-        if(trumps.length){
-          const nonAce = trumps.filter(c=> c.r !== 14);
-          if(nonAce.length) return this._minBy(nonAce, c=>c.r);
-          return this._minBy(trumps, c=>c.r);
-        }
-        return this._minBy(beat, c=>c.r);
-      }
-      const nonTr = valid.filter(c=> c.s !== this.trump);
-      if(nonTr.length) return this._minBy(nonTr, c=>c.r);
-      return this._minBy(valid, c=>c.r);
-    }
-
-    if(this.currentTrick.length === 0){
-      const suitMap = {};
-      for(const c of hand) suitMap[c.s] = suitMap[c.s] ? suitMap[c.s].concat(c.r) : [c.r];
-      const nonTrumpSuits = Object.keys(suitMap).filter(s=> s !== this.trump);
-      if(nonTrumpSuits.length){
-        nonTrumpSuits.sort((a,b) => (suitMap[b].length - suitMap[a].length) || (Math.max(...suitMap[b]) - Math.max(...suitMap[a])));
-        const suit = nonTrumpSuits[0];
-        const candidates = valid.filter(c=> c.s === suit);
-        if(candidates.length){
-          if(this.trickNumber < 5) return this._maxBy(candidates, c=>c.r);
-          return this._maxBy(candidates, c=>c.r);
-        }
-      }
-      const nonTrumps = valid.filter(c=> c.s !== this.trump);
-      return nonTrumps.length ? this._minBy(nonTrumps, c=>c.r) : this._minBy(valid, c=>c.r);
-    }
-    return this._minBy(valid, c=>c.r);
-  }
-
-  _validFor(playerId){
-    const hand = this.hands[playerId];
-    if(this.currentTrick.length === 0) return this._sortHand(hand);
-    const lead = this.currentTrick[0].card.s;
-    const same = hand.filter(c=> c.s === lead);
-    return same.length ? this._sortHand(same) : this._sortHand(hand.slice());
-  }
-  _minBy(arr,fn){ return arr.reduce((a,b)=> fn(b) < fn(a) ? b : a ); }
-  _maxBy(arr,fn){ return arr.reduce((a,b)=> fn(b) > fn(a) ? b : a ); }
-  _hasControl(playerId){
-    if(this.trickNumber === 0) return false;
-    return this.lastTrickWinner === playerId && this._whoseTurn() === playerId && this.currentTrick.length === 0;
-  }
-  _higherTrumpsLikelyGone(){
-    if(!this.trump) return false;
-    const needed = [13,14];
-    let remaining = new Set(needed);
-    for(const c of this.seenCards) if(c.s === this.trump && remaining.has(c.r)) remaining.delete(c.r);
-    if(remaining.size === 0) return true;
-    if(this.trickNumber >= 8 && remaining.size <=1) return true;
-    return false;
-  }
-  _minimalBeating(playerId, valid){
-    if(this.currentTrick.length === 0) return null;
-    const lead = this.currentTrick[0].card.s;
-    const cur = currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
-    const curCard = cur.card;
-    const beating = valid.filter(c=> compareStrength(strength(c, lead, this.trump), strength(curCard, lead, this.trump)) > 0);
-    if(beating.length){
-      const same = beating.filter(c=> c.s === curCard.s && c.s !== this.trump);
-      if(same.length) return this._minBy(same, c=>c.r);
-      const trumps = beating.filter(c=> c.s === this.trump);
-      if(trumps.length){
-        const nonAce = trumps.filter(c=> c.r !== 14);
-        if(nonAce.length) return this._minBy(nonAce, c=>c.r);
-        return this._minBy(trumps, c=>c.r);
-      }
-      return this._minBy(beating, c=>c.r);
-    }
-    return null;
-  }
-
-  _cardScoreForEndgame(c, lead){
-    let score = c.r;
-    if(c.s === this.trump) score += 50 + c.r;
-    if(c.s === lead) score += 10;
-    return score;
-  }
 }
 
-/* =========================
-   UI & Integration
-   ========================= */
-
-const logEl = document.getElementById('log');
-function writeLog(txt){
-  const line = `[${new Date().toLocaleTimeString()}] ${txt}`;
-  logEl.textContent += line + "\n";
-  logEl.scrollTop = logEl.scrollHeight;
-}
-
-/* UI pointers */
+/* ========= UI wiring ========= */
 const ui = {
   youHand: document.getElementById('you-hand'),
-  chooser: document.getElementById('chooser'),
+  slots: { P1: document.getElementById('slot-P1'), P2: document.getElementById('slot-P2'),
+           P3: document.getElementById('slot-P3'), P4: document.getElementById('slot-P4') },
+  counts: { P2: document.getElementById('count-P2'), P3: document.getElementById('count-P3'), P4: document.getElementById('count-P4') },
+  lastTrick: { P1: document.getElementById('lt-P1'), P2: document.getElementById('lt-P2'),
+               P3: document.getElementById('lt-P3'), P4: document.getElementById('lt-P4') },
+  note: document.getElementById('center-note'),
   btnStart: document.getElementById('btn-start'),
-  btnNew: document.getElementById('btn-new'),
-  slots: {P1:document.getElementById('pc-P1'),P2:document.getElementById('pc-P2'),P3:document.getElementById('pc-P3'),P4:document.getElementById('pc-P4')},
-  fans: {P2:document.getElementById('fan-P2'),P3:document.getElementById('fan-P3'),P4:document.getElementById('fan-P4')},
-  info: {trump:document.getElementById('ui-trump'), pool:document.getElementById('ui-pool'), t1:document.getElementById('ui-t1'), t2:document.getElementById('ui-t2'), last:document.getElementById('ui-last'), starter:document.getElementById('ui-starter'), trick:document.getElementById('ui-trick')},
-  centerNote: document.getElementById('center-note')
+  trumpModal: document.getElementById('trump-modal'),
+  trumpButtons: null,
+  info: {
+    trump: document.getElementById('ui-trump'),
+    pool: document.getElementById('ui-pool'),
+    t1: document.getElementById('ui-t1'),
+    t2: document.getElementById('ui-t2'),
+    starter: document.getElementById('ui-starter'),
+    trick: document.getElementById('ui-trick'),
+  }
 };
 
 let game = null;
-let uiState = {humanLocked:false};
+let humanLocked = true;
+const BOT_DELAY_MS = 2000; // ~2 seconds between turns
 
-/* image path helpers */
-const suitToFile = {Spades:'spades',Hearts:'hearts',Diamonds:'diamonds',Clubs:'clubs'};
-const rankToName = {11:'jack',12:'queen',13:'king',14:'ace'};
-function rankToFile(r){ return rankToName[r] || String(r); }
-function getCardFileName(card){
-  const rank = rankToFile(card.r);
-  const suit = suitToFile[card.s];
-  return `PNG-cards-1.3/${rank}_of_${suit}.png`;
+function clearCurrentSlots(){ for(const k in ui.slots){ ui.slots[k].innerHTML=''; } }
+function setCounts(){
+  ui.counts.P2.textContent = `(${game.hands.P2.length} cards)`;
+  ui.counts.P3.textContent = `(${game.hands.P3.length} cards)`;
+  ui.counts.P4.textContent = `(${game.hands.P4.length} cards)`;
 }
-function getBackFile(){ return `PNG-cards-1.3/back.png`; /* optional: add a back image named back.png in folder or replace with same card to show back */ }
-
-/* create a flying animated copy from source element to target slot */
-function animateCardFly(imgEl, targetEl, cb){
-  const srcRect = imgEl.getBoundingClientRect();
-  const tgtRect = targetEl.getBoundingClientRect();
-  const fly = imgEl.cloneNode(true);
-  fly.className = 'fly-card';
-  document.body.appendChild(fly);
-  fly.style.left = srcRect.left + 'px';
-  fly.style.top = srcRect.top + 'px';
-  fly.style.width = srcRect.width + 'px';
-  fly.style.height = srcRect.height + 'px';
-  fly.style.opacity = '1';
-  requestAnimationFrame(()=> {
-    const dx = tgtRect.left + (tgtRect.width - srcRect.width)/2 - srcRect.left;
-    const dy = tgtRect.top + (tgtRect.height - srcRect.height)/2 - srcRect.top;
-    fly.style.transform = `translate(${dx}px, ${dy}px) scale(${tgtRect.width/srcRect.width})`;
-    setTimeout(()=> {
-      fly.style.opacity = '0';
-      setTimeout(()=> { fly.remove(); if(cb) cb(); }, 220);
-    }, 380);
-  });
-}
-
-/* render helpers */
-function clearTablePlayed(){
-  for(const p of PLAYERS) {
-    const el = ui.slots[p];
-    el.innerHTML = '';
-  }
-}
-function clearTableSlots(){
-  // same as played but keep slot outlines intact
-  clearTablePlayed();
-}
-
-function renderYourHand(){
-  ui.youHand.innerHTML = '';
-  const hand = game.hands.P1;
-  const {valid: validList} = game.getValidInvalid('P1');
-  const validKeys = new Set((validList||[]).map(c=> `${c.r}-${c.s}`));
-  hand.forEach((c, i) => {
-    const key = `${c.r}-${c.s}`;
-    const img = document.createElement('img');
-    img.src = getCardFileName(c);
-    img.className = 'card-img';
-    img.setAttribute('draggable','false');
-    img.dataset.idx = i;
-    img.dataset.key = key;
-    const isValid = validKeys.has(key);
-    img.setAttribute('aria-disabled', String(!isValid));
-    if(isValid) img.classList.add('glow');
-    img.addEventListener('click', (ev)=>{
-      if(!isValid || uiState.humanLocked) return;
-      uiState.humanLocked = true;
-      // play via engine, but animate from this img to center slot for P1
-      try {
-        const res = game.playCard('P1', c);
-        writeLog(`You (P1) played ${cardStr(c)}`);
-        // animate
-        const target = ui.slots['P1'];
-        animateCardFly(img, target, ()=> {
-          // After fly completes, process events (engine already returned events)
-          updateAfterEvents(res.events);
-          // Kick off bots after small delay
-          setTimeout(()=> botSequence(game.starterIndex, game.currentTrick.length), 320);
-          uiState.humanLocked = false;
-        });
-      } catch(err){
-        alert(err.message);
-        uiState.humanLocked = false;
-      }
-    });
-    ui.youHand.appendChild(img);
-  });
-}
-
-function renderOpponentFans(){
-  // show number of backs equal to count (but cap to 8 for width)
-  for(const p of ['P2','P3','P4']){
-    const root = ui.fans[p];
-    root.innerHTML = '';
-    const count = (game.hands[p] && game.hands[p].length) || 0;
-    const toShow = Math.min(count, 8);
-    for(let i=0;i<toShow;i++){
-      const b = document.createElement('img');
-      // show a generic back image if you have one; if not, use a tiny face-down style using a card image with rotate
-      b.src = getBackFile();
-      b.className = 'card-back';
-      root.appendChild(b);
-    }
-  }
-}
-
-/* place played card image into player's played slot (no animation) */
-function placePlayedCard(pid, card){
-  const slot = ui.slots[pid];
-  slot.innerHTML = '';
-  const img = document.createElement('img');
-  img.src = getCardFileName(card);
-  img.onload = ()=> {};
-  img.alt = cardStr(card);
-  slot.appendChild(img);
-}
-
-/* handle events list from engine */
-function updateAfterEvents(events){
-  if(!events || !events.length) return;
-  for(const e of events){
-    if(e.type === 'play'){
-      // place card into played slot
-      placePlayedCard(e.player, e.card);
-      writeLog(`${e.player} played ${cardStr(e.card)}`);
-    } else if(e.type === 'trick_complete'){
-      writeLog(`Trick ${e.trick_number} complete. Winner: ${e.winner} with ${cardStr(e.winning_card)}`);
-      // briefly highlight winner then clear for next trick
-      setTimeout(()=> {
-        // keep last trick visible for a moment, then clear
-        setTimeout(()=> {
-          clearTableSlots();
-          updateInfo();
-        }, 600);
-      }, 300);
-    } else if(e.type === 'pool_captured'){
-      writeLog(`${e.by_player} captured pool = ${e.amount} (team ${e.team})`);
-    } else if(e.type === 'match_end'){
-      writeLog(`Match end. Team1 ${e.result.team_tricks[1]} | Team2 ${e.result.team_tricks[2]}. Trump: ${e.result.trump}`);
-      setTimeout(()=> {
-        alert(`Match finished.\nTeam1: ${e.result.team_tricks[1]}\nTeam2: ${e.result.team_tricks[2]}\nTrump: ${e.result.trump}`);
-      }, 200);
-    }
-  }
-  // after processing, update UI
-  renderYourHand();
-  renderOpponentFans();
-  updateInfo();
-}
-
-/* Bot sequence: starterIndex and offset */
-function botSequence(starterIndex, turnOffset){
-  if(game.isMatchOver()) {
-    updateInfo();
-    return;
-  }
-  if(turnOffset >= 4){
-    // trick completed; start next trick
-    setTimeout(()=> beginTrick(), 300);
-    return;
-  }
-  const playerIndex = (starterIndex + turnOffset) % 4;
-  const pname = PLAYERS[playerIndex];
-  if(pname === 'P1'){
-    renderYourHand();
-    uiState.humanLocked = false;
-    return;
-  }
-  uiState.humanLocked = true;
-  setTimeout(()=> {
-    const chosen = game._botChooseCard(pname);
-    // animate from one of the fan backs to the center
-    const fan = ui.fans[pname];
-    const sourceImg = fan.querySelector('img') || document.querySelector('.card-back') || document.createElement('img');
-    // apply play (server-side logic)
-    const evs = game._applyPlay(pname, chosen);
-    // animate from source to target slot
-    animateCardFly(sourceImg, ui.slots[pname], ()=> {
-      // after animation, update UI with events
-      updateAfterEvents(evs);
-      // continue sequence
-      botSequence(starterIndex, turnOffset + 1);
-    });
-  }, BOT_DELAY + Math.floor(Math.random()*220));
-}
-
-/* start trick loop */
-function beginTrick(){
-  if(game.isMatchOver()){
-    const res = game.finalizeMatch();
-    updateInfo();
-    writeLog(`Match finished. Team1 ${res.team_tricks[1]} | Team2 ${res.team_tricks[2]}`);
-    return;
-  }
-  // clear table slots visually
-  clearTableSlots();
-  game.currentTrick = [];
-  ui.centerNote.textContent = `Trick ${game.trickNumber+1} — Starter: ${PLAYERS[game.starterIndex]}`;
-  updateInfo();
-  if(PLAYERS[game.starterIndex] === 'P1'){
-    renderYourHand();
-    uiState.humanLocked = false;
-  } else {
-    uiState.humanLocked = true;
-    setTimeout(()=> botSequence(game.starterIndex, 0), BOT_DELAY);
-  }
-}
-
-/* update info panel */
 function updateInfo(){
   ui.info.trump.textContent = game.trump ? `${game.trump} ${SUIT_SYMBOL[game.trump]}` : '—';
   ui.info.pool.textContent = String(game.unclaimedPool);
   ui.info.t1.textContent = String(game.teamTricks[1]);
   ui.info.t2.textContent = String(game.teamTricks[2]);
-  ui.info.last.textContent = game.lastTrickWinner ? game.lastTrickWinner : '—';
   ui.info.starter.textContent = PLAYERS[game.starterIndex] || '—';
   ui.info.trick.textContent = String(game.trickNumber+1);
 }
-
-/* Start / New match wiring */
-function initGame(seed=null){
-  game = new GameCore(seed, {P1:'human',P2:'bot',P3:'bot',P4:'bot'});
-  updateAll();
-  clearTableSlots();
+function renderYourHand(){
+  ui.youHand.innerHTML='';
+  const hand = game.hands.P1 || [];
+  const {valid} = game.getValidInvalid('P1');
+  const validKeys = new Set(valid.map(c=>`${c.r}-${c.s}`));
+  hand.forEach((c)=>{
+    const img = document.createElement('img');
+    img.src = getCardFileName(c); img.alt = cardStr(c);
+    img.className = 'card-img'; img.draggable = false;
+    const key = `${c.r}-${c.s}`; const isValid = validKeys.has(key);
+    if(!isValid){ img.style.opacity = .45; img.style.cursor='not-allowed'; }
+    img.addEventListener('click', ()=>{
+      if(!isValid || humanLocked) return;
+      humanLocked = true;
+      const sourceRect = img.getBoundingClientRect();
+      const fly = img.cloneNode(true); fly.className = 'fly';
+      document.body.appendChild(fly);
+      fly.style.left = sourceRect.left+'px'; fly.style.top = sourceRect.top+'px';
+      try {
+        const res = game.playCard('P1', c);
+        img.remove();
+        const target = ui.slots['P1'].getBoundingClientRect();
+        const dx = target.left + (target.width - sourceRect.width)/2 - sourceRect.left;
+        const dy = target.top  + (target.height- sourceRect.height)/2 - sourceRect.top;
+        fly.style.transform = `translate(${dx}px, ${dy}px) scale(${(target.width/sourceRect.width)||1})`;
+        setTimeout(()=>{ fly.style.opacity='0'; setTimeout(()=> fly.remove(), 300); }, 450);
+        placePlayedCard('P1', c);
+        handleEvents(res.events);
+        setTimeout(()=> botFlow(game.starterIndex, game.currentTrick.length), BOT_DELAY_MS);
+      } catch(e){
+        fly.remove(); humanLocked = false; alert(e.message);
+      }
+    });
+    ui.youHand.appendChild(img);
+  });
 }
-
-function startMatchFlow(){
-  initGame();
-  writeLog('=== New match started. Chooser: P1 ===');
-  ui.btnStart.disabled = true;
-  ui.btnNew.disabled = false;
-  if(game.chooserIsHuman()){
-    ui.chooser.style.display = 'block';
-    ui.centerNote.textContent = 'Pick trump (or Random)';
-    const first5 = game.chooserFirstFive();
-    writeLog(`Chooser first five: ${first5.map(c=>cardStr(c)).join(', ')}`);
-  } else {
-    ui.chooser.style.display = 'none';
-    // if chooser is bot, choose random or manual logic (not used)
-    setTimeout(()=> beginTrick(), 300);
-  }
+function placePlayedCard(pid, card){
+  const slot = ui.slots[pid]; if(!slot) return;
+  slot.innerHTML=''; const img = document.createElement('img');
+  img.src = getCardFileName(card); img.alt = cardStr(card);
+  slot.appendChild(img);
 }
-
-function newMatchFlow(){
-  // full reset of scores and match state
-  game.reset();
-  game.resetForNewSeries();
-  initGame();
-  writeLog('=== New match (full reset) ===');
-  ui.btnStart.disabled = false;
-  ui.btnNew.disabled = true;
-  ui.chooser.style.display = 'none';
-  updateAll();
-}
-
-/* UI control wiring */
-document.getElementById('btn-start').addEventListener('click', ()=>{
-  startMatchFlow();
-});
-
-document.getElementById('btn-new').addEventListener('click', ()=>{
-  // fully reset match and points
-  newMatchFlow();
-});
-
-/* chooser buttons */
-document.querySelectorAll('.suit-btn').forEach(b=>{
-  b.addEventListener('click', ()=>{
-    const s = b.dataset.suit;
-    try {
-      game.chooseTrumpManual(s);
-      writeLog(`You chose trump: ${s}`);
-      ui.chooser.style.display = 'none';
-      ui.btnStart.disabled = true;
-      ui.btnNew.disabled = false;
-      setTimeout(()=> beginTrick(), 300);
-    } catch(err){
-      alert(err.message);
+function showLastTrick(){
+  for(const p in ui.lastTrick){ ui.lastTrick[p].innerHTML=''; }
+  game.lastCompletedTrick.forEach(([pid, card])=>{
+    const cell = ui.lastTrick[pid]; if(cell){
+      const img = document.createElement('img');
+      img.src = getCardFileName(card); img.alt = cardStr(card);
+      cell.appendChild(img);
     }
   });
-});
-
-document.getElementById('btn-random').addEventListener('click', ()=>{
-  game.chooseTrumpRandom();
-  writeLog(`You chose RANDOM trump -> ${game.trump}`);
-  ui.chooser.style.display = 'none';
-  ui.btnStart.disabled = true;
-  ui.btnNew.disabled = false;
-  setTimeout(()=> beginTrick(), 300);
-});
-
-/* overall update rendering */
-function updateAll(){
-  clearTableSlots();
-  renderYourHand();
-  renderOpponentFans();
+}
+function handleEvents(events){
+  if(!events || !events.length) return;
+  for(const e of events){
+    if(e.type==='play'){
+      if(e.player!=='P1'){ placePlayedCard(e.player, e.card); }
+    } else if(e.type==='trick_complete'){
+      setTimeout(()=>{
+        showLastTrick(); clearCurrentSlots(); setCounts(); updateInfo();
+      }, 400);
+    } else if(e.type==='match_end'){
+      updateInfo();
+      setTimeout(()=>{
+        alert(`Match finished.\nTeam 1: ${e.result.team_tricks[1]}\nTeam 2: ${e.result.team_tricks[2]}\nTrump: ${e.result.trump}`);
+      }, 200);
+    }
+  }
+  renderYourHand(); setCounts(); updateInfo();
+}
+function botFlow(starterIndex, turnOffset){
+  if(game.isMatchOver()) { updateInfo(); return; }
+  if(turnOffset>=4){ setTimeout(()=> beginTrick(), 600); return; }
+  const idx = (starterIndex + turnOffset) % 4;
+  const pid = PLAYERS[idx];
+  if(pid==='P1'){ humanLocked = false; renderYourHand(); return; }
+  setTimeout(()=>{
+    const chosen = game._botChooseCard(pid);
+    const events = game._applyPlay(pid, chosen);
+    placePlayedCard(pid, chosen);
+    handleEvents(events);
+    botFlow(starterIndex, turnOffset+1);
+  }, BOT_DELAY_MS);
+}
+function beginTrick(){
+  if(game.isMatchOver()){ updateInfo(); return; }
+  clearCurrentSlots();
+  ui.note.textContent = `Trick ${game.trickNumber+1} — Starter: ${PLAYERS[game.starterIndex]}`;
   updateInfo();
-  ui.centerNote.textContent = game.trump ? `Starter: ${PLAYERS[game.starterIndex]}` : 'Deal 5 → choose trump';
+  if(PLAYERS[game.starterIndex]==='P1'){ humanLocked = false; renderYourHand(); }
+  else { humanLocked = true; setTimeout(()=> botFlow(game.starterIndex, 0), BOT_DELAY_MS); }
 }
 
-/* initialize UI */
-initGame();
-updateAll();
-writeLog('Ready. Click Start Match to play.');
+/* ===== Trump picker flow ===== */
+function openTrumpModal(){ ui.trumpModal.style.display='flex'; }
+function closeTrumpModal(){ ui.trumpModal.style.display='none'; }
 
+function startMatch(){
+  // New match: deal 5 and prompt for trump
+  game = new GameCore(null, {P1:'human',P2:'bot',P3:'bot',P4:'bot'});
+  ui.note.textContent = 'Choose a trump to continue';
+  clearCurrentSlots();
+  setCounts(); updateInfo(); renderYourHand();
+  openTrumpModal();
+}
+
+function onChooseTrump(suit){
+  if(suit==='__RANDOM__'){
+    game.chooseTrumpRandom(); // up-card defines trump while finishing the deal
+  } else {
+    game.chooseTrumpManual(suit); // set chosen suit, then finish the deal
+  }
+  closeTrumpModal();
+  ui.note.textContent = 'Play your card';
+  setCounts(); updateInfo(); renderYourHand();
+  // Begin first trick (starter is chooser)
+  if(PLAYERS[game.starterIndex]==='P1'){ humanLocked = false; }
+  else { humanLocked = true; setTimeout(()=> botFlow(game.starterIndex, 0), BOT_DELAY_MS); }
+}
+
+/* Wire up UI */
+ui.btnStart.addEventListener('click', startMatch);
+ui.trumpButtons = Array.from(document.querySelectorAll('.suitbtn'));
+ui.trumpButtons.forEach(btn=>{
+  btn.addEventListener('click', ()=> onChooseTrump(btn.dataset.suit));
+});
+
+/* Idle state (before Start) */
+(function initIdle(){
+  game = new GameCore(null, {P1:'human',P2:'bot',P3:'bot',P4:'bot'});
+  // show the initial 5-card deal (pre-trump) just for counts/hand preview
+  setCounts(); updateInfo(); renderYourHand();
+})();
 </script>
 </body>
 </html>
