@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <title>Trick-Taking — You vs 3 Bots (All-JS)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0e1113; --panel:#12161a; --muted:#9fb3ad; --ink:#e7f2ef;
@@ -13,7 +14,7 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-header{padding:16px 18px;text-align:center;font-size:26px;font-weight:800}
+header{padding:12px 18px;text-align:center;font-size:24px;font-weight:800}
 .layout{display:grid;grid-template-columns:300px 1fr 360px;gap:14px;max-width:1400px;margin:0 auto;padding:10px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
 .panel h3{margin:0 0 8px 0;font-size:13px;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
@@ -23,18 +24,20 @@ header{padding:16px 18px;text-align:center;font-size:26px;font-weight:800}
 .btn{appearance:none;border:0;border-radius:10px;padding:10px 12px;font-weight:800;background:var(--accent);color:var(--accentText);cursor:pointer}
 .btn.secondary{background:#24313e;color:#d7ece5;border:1px solid var(--line)}
 .btn:disabled{opacity:.6;cursor:not-allowed}
-#you-hand{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:6px}
+#you-hand{display:flex;gap:10px;justify-content:center;padding:6px;flex-wrap:nowrap;overflow:hidden}
 .group{display:flex;flex-direction:column;align-items:center}
 .group .title{font-size:12px;color:var(--muted);margin-bottom:6px}
-.card{display:inline-flex;align-items:center;justify-content:center;min-width:56px;height:72px;border-radius:10px;border:1px solid #2a3643;background:#212b35;color:#fff;margin:4px;padding:6px 10px;font-weight:800;font-size:18px;cursor:pointer;user-select:none;transition:transform .08s,opacity .12s,box-shadow .12s}
-.card.heart,.card.diamond{color:#ffb7b7}
+.card{display:inline-flex;align-items:center;justify-content:center;min-width:56px;height:72px;border-radius:10px;border:1px solid #2a3643;background:#212b35;color:#fff;margin:4px;padding:6px 10px;font-weight:800;font-size:18px;cursor:pointer;user-select:none;transition:transform .12s,opacity .12s,box-shadow .12s}
 .card[aria-disabled="true"]{cursor:not-allowed;opacity:.3;filter:grayscale(.35)}
 .card.glow{box-shadow:0 0 0 4px rgba(72,226,145,.12),0 6px 18px rgba(0,0,0,.4)}
-#table{padding:10px;border-radius:12px;background:linear-gradient(180deg,var(--table-grad1),var(--table-grad2));display:grid;grid-template-rows:72px 1fr 140px;gap:10px}
-.row{display:flex;align-items:center;justify-content:center;gap:12px}
-.slot{width:170px;height:72px;border-radius:10px;border:2px dashed rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;position:relative}
+#table{padding:8px;border-radius:12px;background:linear-gradient(180deg,var(--table-grad1),var(--table-grad2));display:grid;grid-template-rows:auto 1fr auto;gap:8px;align-items:center;justify-items:center;min-height:520px;transform-origin:center center}
+.table-inner{width:100%;max-width:820px;display:grid;grid-template-rows:120px 1fr 120px;gap:6px;align-items:center}
+.row{display:flex;align-items:center;justify-content:center;gap:8px}
+.slot{width:140px;height:96px;border-radius:10px;border:2px dashed rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;position:relative;background:transparent}
 .slot .who{position:absolute;top:-18px;font-size:11px;color:#d9f0e6;opacity:.9}
-#center-note{color:#cfe8df;text-align:center;margin-top:6px;font-size:13px}
+.played-card{width:92px;height:124px;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.played-card img{width:100%;height:100%;object-fit:cover;display:block}
+.center-note{color:#cfe8df;text-align:center;margin-top:6px;font-size:13px}
 #right{display:flex;flex-direction:column;gap:12px}
 .kv{display:flex;gap:10px;flex-wrap:wrap}
 .badge{display:inline-flex;align-items:center;gap:8px;background:#0f1519;border:1px solid var(--line);padding:8px 12px;border-radius:999px;font-weight:800}
@@ -43,6 +46,33 @@ header{padding:16px 18px;text-align:center;font-size:26px;font-weight:800}
 #log{height:260px;overflow:auto;background:#050708;border-radius:10px;padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre-line}
 .small{font-size:13px;color:var(--muted)}
 .center{display:flex;align-items:center;justify-content:center}
+
+/* card image styles (hands & backs) */
+.card-img { width:92px; height:124px; object-fit:cover; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.5); cursor:pointer; transition:transform .18s ease; }
+.card-img:active{ transform: translateY(-6px); }
+.card-back { width:56px; height:76px; object-fit:cover; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,.45); }
+
+/* fanned opponent hands at bottom */
+.opponent-hands { display:flex; justify-content:space-between; gap:12px; margin-top:8px; }
+.opponent { display:flex; flex-direction:column; align-items:center; gap:6px; min-width:120px; }
+.fan { display:flex; align-items:flex-end; position:relative; height:86px; }
+.fan img { margin-left:-34px; transition:transform .25s, opacity .2s; }
+.fan img:first-child { margin-left:0; }
+
+/* animation helper for flying card to center */
+.fly-card {
+  position:fixed; z-index:9999; pointer-events:none; transition:transform .45s cubic-bezier(.2,.9,.3,1), opacity .3s;
+  width:92px; height:124px; object-fit:cover; border-radius:6px; box-shadow:0 12px 30px rgba(0,0,0,.6);
+}
+
+/* responsive tweaks */
+@media (max-width:1000px){
+  .layout{grid-template-columns:1fr; padding:8px}
+  #right{order:3}
+  #left{order:1}
+  #table{order:2}
+  .table-inner{max-width:100%}
+}
 </style>
 </head>
 <body>
@@ -70,21 +100,42 @@ header{padding:16px 18px;text-align:center;font-size:26px;font-weight:800}
       <button id="btn-new" class="btn secondary" disabled>New Match</button>
     </div>
 
-    <div style="margin-top:8px" class="small">Tips: valid cards glow; invalid are visible but disabled. Bots have thinking delays for realism.</div>
+    <div style="margin-top:8px" class="small">Tips: click a card image to play. Opponents shown as card-backs. Bots have thinking delays for realism.</div>
   </div>
 
   <!-- Center: Table -->
   <div id="table" class="panel">
-    <div class="row">
-      <div class="slot" id="slot-P2"><div class="who">P2</div></div>
+    <div class="table-inner">
+      <div class="row" style="justify-content:center">
+        <div class="slot" id="slot-P2"><div class="who">P2</div>
+          <div class="played-card" id="pc-P2"></div>
+        </div>
+      </div>
+
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="slot" id="slot-P3"><div class="who">P3</div>
+          <div class="played-card" id="pc-P3"></div>
+        </div>
+        <div class="slot" id="slot-P4"><div class="who">P4</div>
+          <div class="played-card" id="pc-P4"></div>
+        </div>
+      </div>
+
+      <div class="row" style="flex-direction:column;align-items:center">
+        <div class="slot" id="slot-P1"><div class="who">You (P1)</div>
+          <div class="played-card" id="pc-P1"></div>
+        </div>
+        <div id="center-note" class="small">Click "Start Match" to begin (deals 5 to everyone)</div>
+      </div>
     </div>
-    <div class="row">
-      <div class="slot" id="slot-P3"><div class="who">P3</div></div>
-      <div class="slot" id="slot-P4"><div class="who">P4</div></div>
-    </div>
-    <div class="row" style="flex-direction:column">
-      <div class="slot" id="slot-P1"><div class="who">You (P1)</div></div>
-      <div id="center-note" class="small">Click "Start Match" to begin (deals 5 to everyone)</div>
+
+    <!-- Opponent fanned hands (backs) -->
+    <div style="width:100%;max-width:820px;margin-top:10px;">
+      <div class="opponent-hands">
+        <div class="opponent"><div class="small">P2</div><div class="fan" id="fan-P2"></div></div>
+        <div class="opponent"><div class="small">P3</div><div class="fan" id="fan-P3"></div></div>
+        <div class="opponent"><div class="small">P4</div><div class="fan" id="fan-P4"></div></div>
+      </div>
     </div>
   </div>
 
@@ -111,6 +162,9 @@ header{padding:16px 18px;text-align:center;font-size:26px;font-weight:800}
     </div>
   </div>
 </div>
+
+<!-- invisible fly container -->
+<div id="fly-root"></div>
 
 <script>
 /* =========================
@@ -141,7 +195,6 @@ function shuffle(arr, rng=Math){ // Fisher-Yates
   return arr;
 }
 
-// strength comparator -> returns array for lex compare
 function strength(card, leadSuit, trump){
   return [(trump && card.s===trump)?1:0, (leadSuit && card.s===leadSuit)?1:0, card.r];
 }
@@ -162,7 +215,6 @@ function currentWinner(played, trump){
 /* ===== GameCore class ===== */
 class GameCore {
   constructor(seed=null, playersMode=null){
-    // playersMode e.g. {P1:'human',P2:'bot',...}
     this.rng = seed ? this._seededRandom(seed) : Math;
     this.playersMode = {P1:'human',P2:'bot',P3:'bot',P4:'bot'};
     if(playersMode) Object.assign(this.playersMode, playersMode);
@@ -170,7 +222,6 @@ class GameCore {
   }
 
   _seededRandom(seed){
-    // simple mulberry32
     let t = seed >>> 0;
     return {
       random(){
@@ -210,7 +261,7 @@ class GameCore {
     this.currentTrick = []; // [{idx,pid,card}]
     this.starterIndex = this.chooserIndex;
     this.lastCompletedTrick = [];
-    this.seenCards = []; // cards that have been played (for AI knowledge)
+    this.seenCards = [];
     this.pendingResolve = false;
   }
 
@@ -281,13 +332,8 @@ class GameCore {
   isMatchOver(){ return PLAYERS.every(p=>this.hands[p].length === 0); }
   tricksRemaining(){ return 13 - this.trickNumber; }
 
-  // VALID/INVALID move check for UI
   getValidInvalid(playerId){
     if(!PLAYERS.includes(playerId)) throw new Error("Bad playerId");
-    // Determine whose turn
-    if(this._whoseTurn() !== playerId) {
-      // still return lists but note player can't play now
-    }
     const hand = this.hands[playerId];
     if(this.currentTrick.length === 0) return {valid: this._sortHand(hand), invalid: []};
     const lead = this.currentTrick[0].card.s;
@@ -297,30 +343,23 @@ class GameCore {
     return {valid: clone(valid), invalid: clone(this._sortHand(invalid))};
   }
 
-  // whose turn next
   _whoseTurn(){
     const starter = this.starterIndex;
     const offset = this.currentTrick.length % 4;
     return PLAYERS[(starter + offset) % 4];
   }
 
-  // play a card by playerId and card object (validated before)
   playCard(playerId, card){
-    // validate turn
     if(this._whoseTurn() !== playerId) throw new Error("Not player's turn");
-    // find card
     const idx = this.hands[playerId].findIndex(c=> c.r===card.r && c.s===card.s);
     if(idx === -1) throw new Error("Card not in hand");
-    // follow suit check
     if(this.currentTrick.length){
       const lead = this.currentTrick[0].card.s;
       if(this.hands[playerId].some(c=>c.s===lead) && card.s !== lead) throw new Error("Must follow suit");
     }
-    // commit
     this.hands[playerId].splice(idx,1);
     this.currentTrick.push({idx: PLAYERS.indexOf(playerId), pid: playerId, card: card});
     this.seenCards.push(card);
-    // resolve if 4 cards on table
     const events = [{type:'play', player:playerId, card: clone(card)}];
     if(this.currentTrick.length === 4){
       const p = this._resolveTrick();
@@ -331,7 +370,6 @@ class GameCore {
 
   _resolveTrick(){
     const winnerObj = currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
-    // winnerObj is one of the array elements; if we used map, we get object with idx/pid/card
     const winnerIdx = winnerObj.idx;
     const winnerName = PLAYERS[winnerIdx];
     const winningCard = winnerObj.card;
@@ -361,7 +399,6 @@ class GameCore {
       const res = this.finalizeMatch();
       events.push({type:'match_end', result: res});
     }
-    // store readable log
     const readable = this.lastCompletedTrick.map(x=>[x[0], cardStr(x[1])]);
     this.matchLog.push({trick:this.trickNumber, played:readable, winner:winnerName});
     return events;
@@ -377,10 +414,8 @@ class GameCore {
     return {team_tricks: clone(this.teamTricks), player_tricks: clone(this.playerTricks), trump:this.trump, last_trick_winner:this.lastTrickWinner};
   }
 
-  // auto-play bots until a human turn or match end
   autoPlayUntilHuman(onMove=null){
     const moves = [], events = [];
-    // if trump not set -> waiting for chooser
     if(this.trump === null) return {moves, events, state: this.getStateView()};
     while(true){
       if(this.isMatchOver()){
@@ -395,13 +430,11 @@ class GameCore {
       moves.push({player: cur, card: clone(ct)});
       events.push(...ev);
       if(onMove) onMove({player:cur, card:clone(ct), events:clone(ev)});
-      // continue loop until human's turn or match ends
     }
     return {moves, events, state: this.getStateView()};
   }
 
   _applyPlay(playerId, ct){
-    // same as playCard but without revalidation
     const idx = this.hands[playerId].findIndex(c=>c.r===ct.r && c.s===ct.s);
     if(idx === -1) throw new Error("card missing in _applyPlay");
     this.hands[playerId].splice(idx,1);
@@ -414,45 +447,34 @@ class GameCore {
     return events;
   }
 
-  // ========== Bot AI (advanced) ==========
   _botChooseCard(playerId){
-    // Knowledge: this.hands[playerId], this.currentTrick, this.unclaimedPool, this.trump, this.seenCards, this.trickNumber
     const hand = this.hands[playerId].slice();
     const valid = this._validFor(playerId);
     const lead = this.currentTrick.length ? this.currentTrick[0].card.s : null;
 
-    // 1. If last trick: push to win if possible (strongest valid)
     if(this.tricksRemaining() === 1){
       return this._maxBy(valid, c=> this._cardScoreForEndgame(c, lead));
     }
 
-    // 2. Pool pressure: if pool is large, be more aggressive
     if(this.unclaimedPool >= 4){
-      // try minimal to win trick: prefer not using Ace unless necessary
       const minimalBeat = this._minimalBeating(playerId, valid);
       if(minimalBeat) return minimalBeat;
     }
 
-    // 3. If leading and near endgame, try to save strong trump (Q/A/K) for final:
     if(this.currentTrick.length === 0 && this.tricksRemaining() <= 3 && this._hasControl(playerId)){
-      const strongTrumps = valid.filter(c=> c.s === this.trump && c.r >= 12); // Q+
+      const strongTrumps = valid.filter(c=> c.s === this.trump && c.r >= 12);
       if(strongTrumps.length){
-        // If higher trumps appear to be gone (or likely gone) then save:
         if(this._higherTrumpsLikelyGone()){
-          // play weakest non-trump or weakest trump that's NOT strong
           const nonTrumps = valid.filter(c=> c.s !== this.trump);
           if(nonTrumps.length) return this._minBy(nonTrumps, c=>c.r);
           const weakTrumps = valid.filter(c=> c.s === this.trump && c.r < 12);
           if(weakTrumps.length) return this._minBy(weakTrumps, c=>c.r);
-          // else must play a strong trump but prefer lowest strong
           return this._minBy(strongTrumps, c=>c.r);
         }
       }
     }
 
-    // 4. If not leading:
     if(this.currentTrick.length > 0){
-      // if partner winning -> discard low safe
       const curWin = currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
       const curTeam = TEAM_OF[curWin.pid];
       const myTeam = TEAM_OF[playerId];
@@ -460,31 +482,24 @@ class GameCore {
         const nonTrump = valid.filter(c=> c.s !== this.trump);
         return nonTrump.length ? this._minBy(nonTrump, c=>c.r) : this._minBy(valid, c=>c.r);
       }
-      // opponent winning: try minimal beating
       const beat = valid.filter(c=> compareStrength(strength(c, lead, this.trump), strength(curWin.card, lead, this.trump)) > 0);
       if(beat.length){
-        // prefer same-suit beating that is minimal
         const sameSuit = beat.filter(c=> c.s === curWin.card.s && c.s !== this.trump);
         if(sameSuit.length) return this._minBy(sameSuit, c=>c.r);
-        // else prefer lowest trump that beats (avoid Ace if possible)
         const trumps = beat.filter(c=> c.s === this.trump);
         if(trumps.length){
           const nonAce = trumps.filter(c=> c.r !== 14);
           if(nonAce.length) return this._minBy(nonAce, c=>c.r);
           return this._minBy(trumps, c=>c.r);
         }
-        // else minimal beating
         return this._minBy(beat, c=>c.r);
       }
-      // can't beat -> dump lowest non-trump
       const nonTr = valid.filter(c=> c.s !== this.trump);
       if(nonTr.length) return this._minBy(nonTr, c=>c.r);
       return this._minBy(valid, c=>c.r);
     }
 
-    // 5. Leading general heuristic
     if(this.currentTrick.length === 0){
-      // pick from longest suit, favor higher if early, medium-high if early, else low
       const suitMap = {};
       for(const c of hand) suitMap[c.s] = suitMap[c.s] ? suitMap[c.s].concat(c.r) : [c.r];
       const nonTrumpSuits = Object.keys(suitMap).filter(s=> s !== this.trump);
@@ -497,16 +512,12 @@ class GameCore {
           return this._maxBy(candidates, c=>c.r);
         }
       }
-      // fallback
       const nonTrumps = valid.filter(c=> c.s !== this.trump);
       return nonTrumps.length ? this._minBy(nonTrumps, c=>c.r) : this._minBy(valid, c=>c.r);
     }
-
-    // ultimate fallback
     return this._minBy(valid, c=>c.r);
   }
 
-  // helpers for AI
   _validFor(playerId){
     const hand = this.hands[playerId];
     if(this.currentTrick.length === 0) return this._sortHand(hand);
@@ -521,25 +532,21 @@ class GameCore {
     return this.lastTrickWinner === playerId && this._whoseTurn() === playerId && this.currentTrick.length === 0;
   }
   _higherTrumpsLikelyGone(){
-    // heuristic: if most high trumps are in seen cards (Q/A/K) or only few rounds left and many cards seen
     if(!this.trump) return false;
-    const needed = [13,14]; // K,A
+    const needed = [13,14];
     let remaining = new Set(needed);
     for(const c of this.seenCards) if(c.s === this.trump && remaining.has(c.r)) remaining.delete(c.r);
-    // also if many cards played, assume unknown high trumps are less likely
     if(remaining.size === 0) return true;
     if(this.trickNumber >= 8 && remaining.size <=1) return true;
     return false;
   }
   _minimalBeating(playerId, valid){
-    // given valid, the bot tries to minimally overtake current winner
     if(this.currentTrick.length === 0) return null;
     const lead = this.currentTrick[0].card.s;
     const cur = currentWinner(this.currentTrick.map(x=>({idx:x.idx,pid:x.pid,card:x.card})), this.trump);
     const curCard = cur.card;
     const beating = valid.filter(c=> compareStrength(strength(c, lead, this.trump), strength(curCard, lead, this.trump)) > 0);
     if(beating.length){
-      // try same-suit minimal
       const same = beating.filter(c=> c.s === curCard.s && c.s !== this.trump);
       if(same.length) return this._minBy(same, c=>c.r);
       const trumps = beating.filter(c=> c.s === this.trump);
@@ -554,7 +561,6 @@ class GameCore {
   }
 
   _cardScoreForEndgame(c, lead){
-    // prefer trumps and high ranks in last trick
     let score = c.r;
     if(c.s === this.trump) score += 50 + c.r;
     if(c.s === lead) score += 10;
@@ -579,7 +585,8 @@ const ui = {
   chooser: document.getElementById('chooser'),
   btnStart: document.getElementById('btn-start'),
   btnNew: document.getElementById('btn-new'),
-  slots: {P1:document.getElementById('slot-P1'),P2:document.getElementById('slot-P2'),P3:document.getElementById('slot-P3'),P4:document.getElementById('slot-P4')},
+  slots: {P1:document.getElementById('pc-P1'),P2:document.getElementById('pc-P2'),P3:document.getElementById('pc-P3'),P4:document.getElementById('pc-P4')},
+  fans: {P2:document.getElementById('fan-P2'),P3:document.getElementById('fan-P3'),P4:document.getElementById('fan-P4')},
   info: {trump:document.getElementById('ui-trump'), pool:document.getElementById('ui-pool'), t1:document.getElementById('ui-t1'), t2:document.getElementById('ui-t2'), last:document.getElementById('ui-last'), starter:document.getElementById('ui-starter'), trick:document.getElementById('ui-trick')},
   centerNote: document.getElementById('center-note')
 };
@@ -587,82 +594,119 @@ const ui = {
 let game = null;
 let uiState = {humanLocked:false};
 
-// create new game core
-function initGame(seed=null){
-  game = new GameCore(seed, {P1:'human',P2:'bot',P3:'bot',P4:'bot'});
-  updateAll();
-  clearTableSlots();
+/* image path helpers */
+const suitToFile = {Spades:'spades',Hearts:'hearts',Diamonds:'diamonds',Clubs:'clubs'};
+const rankToName = {11:'jack',12:'queen',13:'king',14:'ace'};
+function rankToFile(r){ return rankToName[r] || String(r); }
+function getCardFileName(card){
+  const rank = rankToFile(card.r);
+  const suit = suitToFile[card.s];
+  return `PNG-cards-1.3/${rank}_of_${suit}.png`;
+}
+function getBackFile(){ return `PNG-cards-1.3/back.png`; /* optional: add a back image named back.png in folder or replace with same card to show back */ }
+
+/* create a flying animated copy from source element to target slot */
+function animateCardFly(imgEl, targetEl, cb){
+  const srcRect = imgEl.getBoundingClientRect();
+  const tgtRect = targetEl.getBoundingClientRect();
+  const fly = imgEl.cloneNode(true);
+  fly.className = 'fly-card';
+  document.body.appendChild(fly);
+  fly.style.left = srcRect.left + 'px';
+  fly.style.top = srcRect.top + 'px';
+  fly.style.width = srcRect.width + 'px';
+  fly.style.height = srcRect.height + 'px';
+  fly.style.opacity = '1';
+  requestAnimationFrame(()=> {
+    const dx = tgtRect.left + (tgtRect.width - srcRect.width)/2 - srcRect.left;
+    const dy = tgtRect.top + (tgtRect.height - srcRect.height)/2 - srcRect.top;
+    fly.style.transform = `translate(${dx}px, ${dy}px) scale(${tgtRect.width/srcRect.width})`;
+    setTimeout(()=> {
+      fly.style.opacity = '0';
+      setTimeout(()=> { fly.remove(); if(cb) cb(); }, 220);
+    }, 380);
+  });
 }
 
 /* render helpers */
+function clearTablePlayed(){
+  for(const p of PLAYERS) {
+    const el = ui.slots[p];
+    el.innerHTML = '';
+  }
+}
 function clearTableSlots(){
-  for(const p of PLAYERS) ui.slots[p].querySelectorAll('.card').forEach(n=>n.remove());
+  // same as played but keep slot outlines intact
+  clearTablePlayed();
 }
-function placeOnTable(pid, card){
-  const slot = ui.slots[pid];
-  const el = document.createElement('div');
-  el.className = `card ${card.s==='Hearts'?'heart':card.s==='Diamonds'?'diamond':''}`;
-  el.textContent = cardStr(card);
-  el.style.minWidth='56px'; el.style.height='64px';
-  slot.appendChild(el);
-}
+
 function renderYourHand(){
   ui.youHand.innerHTML = '';
   const hand = game.hands.P1;
-  const {valid: validList} = game.getValidInvalid ? game.getValidInvalid('P1') : game.getValidInvalid('P1') ; // call compatibility
+  const {valid: validList} = game.getValidInvalid('P1');
   const validKeys = new Set((validList||[]).map(c=> `${c.r}-${c.s}`));
-  const grouped = {Spades:[],Hearts:[],Diamonds:[],Clubs:[]};
-  hand.forEach(c=> grouped[c.s].push(c));
-  for(const s of SUITS){
-    if(!grouped[s].length) continue;
-    const g = document.createElement('div'); g.className='group';
-    const t = document.createElement('div'); t.className='title'; t.textContent = `${s} ${SUIT_SYMBOL[s]}`;
-    g.appendChild(t);
-    grouped[s].forEach(c=>{
-      const key = `${c.r}-${c.s}`;
-      const btn = document.createElement('div');
-      btn.className = `card ${c.s==='Hearts'?'heart':c.s==='Diamonds'?'diamond':''}`;
-      btn.textContent = cardStr(c);
-      const isValid = validKeys.has(key);
-      btn.setAttribute('aria-disabled', String(!isValid));
-      if(isValid) btn.classList.add('glow');
-      btn.addEventListener('click', ()=>{
-        if(!isValid || uiState.humanLocked) return;
-        uiState.humanLocked = true;
-        // play card
-        try {
-          const res = game.playCard('P1', c);
-          writeLog(`You (P1) played ${cardStr(c)}`);
-          placeOnTable('P1', c);
+  hand.forEach((c, i) => {
+    const key = `${c.r}-${c.s}`;
+    const img = document.createElement('img');
+    img.src = getCardFileName(c);
+    img.className = 'card-img';
+    img.setAttribute('draggable','false');
+    img.dataset.idx = i;
+    img.dataset.key = key;
+    const isValid = validKeys.has(key);
+    img.setAttribute('aria-disabled', String(!isValid));
+    if(isValid) img.classList.add('glow');
+    img.addEventListener('click', (ev)=>{
+      if(!isValid || uiState.humanLocked) return;
+      uiState.humanLocked = true;
+      // play via engine, but animate from this img to center slot for P1
+      try {
+        const res = game.playCard('P1', c);
+        writeLog(`You (P1) played ${cardStr(c)}`);
+        // animate
+        const target = ui.slots['P1'];
+        animateCardFly(img, target, ()=> {
+          // After fly completes, process events (engine already returned events)
           updateAfterEvents(res.events);
-          // continue bots after human
-          setTimeout(()=> botSequence(game.starterIndex, game.currentTrick.length), 300);
-        } catch(err){
-          alert(err.message);
-        } finally { uiState.humanLocked = false; }
-      });
-      g.appendChild(btn);
+          // Kick off bots after small delay
+          setTimeout(()=> botSequence(game.starterIndex, game.currentTrick.length), 320);
+          uiState.humanLocked = false;
+        });
+      } catch(err){
+        alert(err.message);
+        uiState.humanLocked = false;
+      }
     });
-    ui.youHand.appendChild(g);
+    ui.youHand.appendChild(img);
+  });
+}
+
+function renderOpponentFans(){
+  // show number of backs equal to count (but cap to 8 for width)
+  for(const p of ['P2','P3','P4']){
+    const root = ui.fans[p];
+    root.innerHTML = '';
+    const count = (game.hands[p] && game.hands[p].length) || 0;
+    const toShow = Math.min(count, 8);
+    for(let i=0;i<toShow;i++){
+      const b = document.createElement('img');
+      // show a generic back image if you have one; if not, use a tiny face-down style using a card image with rotate
+      b.src = getBackFile();
+      b.className = 'card-back';
+      root.appendChild(b);
+    }
   }
 }
 
-function updateInfo(){
-  ui.info.trump.textContent = game.trump ? `${game.trump} ${SUIT_SYMBOL[game.trump]}` : '—';
-  ui.info.pool.textContent = String(game.unclaimedPool);
-  ui.info.t1.textContent = String(game.teamTricks[1]);
-  ui.info.t2.textContent = String(game.teamTricks[2]);
-  ui.info.last.textContent = game.lastTrickWinner ? game.lastTrickWinner : '—';
-  ui.info.starter.textContent = PLAYERS[game.starterIndex] || '—';
-  ui.info.trick.textContent = String(game.trickNumber+1);
-}
-
-/* update everything for initial rendering */
-function updateAll(){
-  clearTableSlots();
-  renderYourHand();
-  updateInfo();
-  ui.centerNote.textContent = game.trump ? `Starter: ${PLAYERS[game.starterIndex]}` : 'Deal 5 → choose trump';
+/* place played card image into player's played slot (no animation) */
+function placePlayedCard(pid, card){
+  const slot = ui.slots[pid];
+  slot.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = getCardFileName(card);
+  img.onload = ()=> {};
+  img.alt = cardStr(card);
+  slot.appendChild(img);
 }
 
 /* handle events list from engine */
@@ -670,13 +714,14 @@ function updateAfterEvents(events){
   if(!events || !events.length) return;
   for(const e of events){
     if(e.type === 'play'){
-      placeOnTable(e.player, e.card);
+      // place card into played slot
+      placePlayedCard(e.player, e.card);
+      writeLog(`${e.player} played ${cardStr(e.card)}`);
     } else if(e.type === 'trick_complete'){
       writeLog(`Trick ${e.trick_number} complete. Winner: ${e.winner} with ${cardStr(e.winning_card)}`);
-      // clear after slight delay
-      setTimeout(()=>{
-        // move last completed trick cards into last-trick slot visually (we already placed)
-        // reset table for next trick
+      // briefly highlight winner then clear for next trick
+      setTimeout(()=> {
+        // keep last trick visible for a moment, then clear
         setTimeout(()=> {
           clearTableSlots();
           updateInfo();
@@ -693,6 +738,7 @@ function updateAfterEvents(events){
   }
   // after processing, update UI
   renderYourHand();
+  renderOpponentFans();
   updateInfo();
 }
 
@@ -703,30 +749,33 @@ function botSequence(starterIndex, turnOffset){
     return;
   }
   if(turnOffset >= 4){
-    // trick completed already by engine in previous steps; begin next trick
-    setTimeout(()=> beginTrick(), 380);
+    // trick completed; start next trick
+    setTimeout(()=> beginTrick(), 300);
     return;
   }
   const playerIndex = (starterIndex + turnOffset) % 4;
   const pname = PLAYERS[playerIndex];
   if(pname === 'P1'){
-    // human turn mid-trick — highlight valid and return control
     renderYourHand();
     uiState.humanLocked = false;
     return;
   }
-  // bot plays
   uiState.humanLocked = true;
-  // compute chosen card with small delay to emulate thinking
-  setTimeout(()=>{
+  setTimeout(()=> {
     const chosen = game._botChooseCard(pname);
-    // apply
+    // animate from one of the fan backs to the center
+    const fan = ui.fans[pname];
+    const sourceImg = fan.querySelector('img') || document.querySelector('.card-back') || document.createElement('img');
+    // apply play (server-side logic)
     const evs = game._applyPlay(pname, chosen);
-    writeLog(`${pname} played ${cardStr(chosen)}`);
-    updateAfterEvents(evs);
-    // continue sequence
-    botSequence(starterIndex, turnOffset + 1);
-  }, BOT_DELAY);
+    // animate from source to target slot
+    animateCardFly(sourceImg, ui.slots[pname], ()=> {
+      // after animation, update UI with events
+      updateAfterEvents(evs);
+      // continue sequence
+      botSequence(starterIndex, turnOffset + 1);
+    });
+  }, BOT_DELAY + Math.floor(Math.random()*220));
 }
 
 /* start trick loop */
@@ -737,58 +786,87 @@ function beginTrick(){
     writeLog(`Match finished. Team1 ${res.team_tricks[1]} | Team2 ${res.team_tricks[2]}`);
     return;
   }
-  // clear table slots
+  // clear table slots visually
   clearTableSlots();
   game.currentTrick = [];
   ui.centerNote.textContent = `Trick ${game.trickNumber+1} — Starter: ${PLAYERS[game.starterIndex]}`;
   updateInfo();
-  // decide starter
   if(PLAYERS[game.starterIndex] === 'P1'){
-    // human to play first
     renderYourHand();
     uiState.humanLocked = false;
   } else {
-    // bots begin
     uiState.humanLocked = true;
     setTimeout(()=> botSequence(game.starterIndex, 0), BOT_DELAY);
   }
 }
 
-/* UI control wiring */
-document.getElementById('btn-start').addEventListener('click', ()=>{
-  initGame(); // new GameCore instance
+/* update info panel */
+function updateInfo(){
+  ui.info.trump.textContent = game.trump ? `${game.trump} ${SUIT_SYMBOL[game.trump]}` : '—';
+  ui.info.pool.textContent = String(game.unclaimedPool);
+  ui.info.t1.textContent = String(game.teamTricks[1]);
+  ui.info.t2.textContent = String(game.teamTricks[2]);
+  ui.info.last.textContent = game.lastTrickWinner ? game.lastTrickWinner : '—';
+  ui.info.starter.textContent = PLAYERS[game.starterIndex] || '—';
+  ui.info.trick.textContent = String(game.trickNumber+1);
+}
+
+/* Start / New match wiring */
+function initGame(seed=null){
+  game = new GameCore(seed, {P1:'human',P2:'bot',P3:'bot',P4:'bot'});
+  updateAll();
+  clearTableSlots();
+}
+
+function startMatchFlow(){
+  initGame();
   writeLog('=== New match started. Chooser: P1 ===');
-  // show chooser if P1 is chooser
+  ui.btnStart.disabled = true;
+  ui.btnNew.disabled = false;
   if(game.chooserIsHuman()){
-    document.getElementById('chooser').style.display = 'block';
-    document.getElementById('btn-start').disabled = true;
-    document.getElementById('btn-new').disabled = true;
+    ui.chooser.style.display = 'block';
     ui.centerNote.textContent = 'Pick trump (or Random)';
-    // show first five
     const first5 = game.chooserFirstFive();
     writeLog(`Chooser first five: ${first5.map(c=>cardStr(c)).join(', ')}`);
   } else {
-    document.getElementById('chooser').style.display = 'none';
+    ui.chooser.style.display = 'none';
+    // if chooser is bot, choose random or manual logic (not used)
+    setTimeout(()=> beginTrick(), 300);
   }
+}
+
+function newMatchFlow(){
+  // full reset of scores and match state
+  game.reset();
+  game.resetForNewSeries();
+  initGame();
+  writeLog('=== New match (full reset) ===');
+  ui.btnStart.disabled = false;
+  ui.btnNew.disabled = true;
+  ui.chooser.style.display = 'none';
   updateAll();
+}
+
+/* UI control wiring */
+document.getElementById('btn-start').addEventListener('click', ()=>{
+  startMatchFlow();
 });
 
 document.getElementById('btn-new').addEventListener('click', ()=>{
-  initGame();
-  writeLog('New match reset.');
-  document.getElementById('chooser').style.display = 'none';
+  // fully reset match and points
+  newMatchFlow();
 });
 
+/* chooser buttons */
 document.querySelectorAll('.suit-btn').forEach(b=>{
   b.addEventListener('click', ()=>{
     const s = b.dataset.suit;
     try {
       game.chooseTrumpManual(s);
       writeLog(`You chose trump: ${s}`);
-      document.getElementById('chooser').style.display = 'none';
-      document.getElementById('btn-start').disabled = true;
-      document.getElementById('btn-new').disabled = false;
-      // Start trick loop
+      ui.chooser.style.display = 'none';
+      ui.btnStart.disabled = true;
+      ui.btnNew.disabled = false;
       setTimeout(()=> beginTrick(), 300);
     } catch(err){
       alert(err.message);
@@ -799,16 +877,26 @@ document.querySelectorAll('.suit-btn').forEach(b=>{
 document.getElementById('btn-random').addEventListener('click', ()=>{
   game.chooseTrumpRandom();
   writeLog(`You chose RANDOM trump -> ${game.trump}`);
-  document.getElementById('chooser').style.display = 'none';
-  document.getElementById('btn-start').disabled = true;
-  document.getElementById('btn-new').disabled = false;
+  ui.chooser.style.display = 'none';
+  ui.btnStart.disabled = true;
+  ui.btnNew.disabled = false;
   setTimeout(()=> beginTrick(), 300);
 });
+
+/* overall update rendering */
+function updateAll(){
+  clearTableSlots();
+  renderYourHand();
+  renderOpponentFans();
+  updateInfo();
+  ui.centerNote.textContent = game.trump ? `Starter: ${PLAYERS[game.starterIndex]}` : 'Deal 5 → choose trump';
+}
 
 /* initialize UI */
 initGame();
 updateAll();
 writeLog('Ready. Click Start Match to play.');
+
 </script>
 </body>
 </html>
